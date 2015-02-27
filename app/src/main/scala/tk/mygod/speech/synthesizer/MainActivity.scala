@@ -413,8 +413,6 @@ final class MainActivity extends ToolbarActivity with OnTtsSynthesisCallbackList
     progressBar.setIndeterminate(true)
     progressBar.setVisibility(View.VISIBLE)
     progressBar.setMax(inputText.getText.length)
-    progressBar.setProgress(0)
-    progressBar.setSecondaryProgress(0)
   }
 
   def stopSynthesis {
@@ -518,7 +516,10 @@ final class MainActivity extends ToolbarActivity with OnTtsSynthesisCallbackList
   def onTtsSynthesisPrepared(e: Int) {
     val end = if (mappings == null) e else mappings.getSourceOffset(e, true)
     runOnUiThread {
-      progressBar.setIndeterminate(false)
+      if (progressBar.isIndeterminate) {
+        progressBar.setIndeterminate(false)
+        progressBar.setProgress(0)
+      }
       progressBar.setSecondaryProgress(end)
     }
   }
@@ -533,8 +534,11 @@ final class MainActivity extends ToolbarActivity with OnTtsSynthesisCallbackList
     if (end < start) end = start
     runOnUiThread {
       if (status != MainActivity.IDLE) {
+        if (progressBar.isIndeterminate) {
+          progressBar.setIndeterminate(false)
+          progressBar.setSecondaryProgress(0)
+        }
         progressBar.setProgress(start)
-        progressBar.setIndeterminate(false)
       }
       builder.setProgress(progressBar.getMax, start, false)
       inputText.setSelection(start, end)
