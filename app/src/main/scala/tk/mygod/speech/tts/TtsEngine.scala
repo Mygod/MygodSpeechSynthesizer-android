@@ -123,7 +123,6 @@ abstract class TtsEngine(protected var context: Context) {
             var p = TtsEngine.splitters.getOrElse(text.charAt(i), TtsEngine.NOT_SPLITTER)
             if (p == TtsEngine.SPACE_FOR_THE_BEST && (next >= maxEnd || text.charAt(next).isWhitespace))
               p = TtsEngine.BEST_SPLITTERS_EVER
-            i = next
             if (p == TtsEngine.NOT_SPLITTER) {
               if (priority <= bestPriority) {
                 end = i
@@ -132,6 +131,7 @@ abstract class TtsEngine(protected var context: Context) {
               }
               priority = TtsEngine.NOT_SPLITTER                                             // reset
             } else if (p < priority) priority = p
+            i = next
           }
           if (priority <= bestPriority) end = i
           result.append(new SpeechPart(last, end, false))

@@ -174,10 +174,11 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
       override def run {
         try {
           processEarcons
-          val id = mergeQueue.take
+          var id = mergeQueue.take
           while (!TextUtils.isEmpty(id)) {
             processFile(SpeechPart.parse(id), id)
             processEarcons
+            id = mergeQueue.take
           }
           if (header != null) {
             header(40) = length.toByte
@@ -200,6 +201,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
           try output.close catch {
             case e: IOException => e.printStackTrace
           }
+          if (listener != null) listener.onTtsSynthesisFinished
           synthesizeToStreamTask = null
         }
       }
@@ -238,10 +240,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
         case e: Exception =>
           e.printStackTrace
           if (listener != null) listener.onTtsSynthesisError(0, currentText.length)
-      } finally {
-        if (merger != null) mergeQueue.add("")
-        if (listener != null) listener.onTtsSynthesisFinished
-      }
+      } finally if (merger != null) mergeQueue.add("")
       null
     }
   }
