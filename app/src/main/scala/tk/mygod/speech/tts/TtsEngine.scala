@@ -16,9 +16,9 @@ import scala.collection.mutable.ArrayBuffer
  * @author Mygod
  */
 object TtsEngine {
-  private val SPLITTERS_COUNT: Int = 6
   private val BEST_SPLITTERS_EVER: Int = 0
   private val SPACE_FOR_THE_BEST: Int = 1
+  private val NOT_SPLITTER: Int = 6
   private val splitters = Array("!。？！…", ".?", ":;：；—", ",()[]{}，（）【】『』［］｛｝、",
     "'\"‘’“”＇＂<>＜＞《》", " \t\b\n\r\f\r\u000b\u001c\u001d\u001e\u001f\u00a0\u2028\u2029/\\|-／＼｜－")
     .zipWithIndex.flatMap { case (s, i) => s.toCharArray.map(c => (c, i)) }.toMap
@@ -113,25 +113,26 @@ abstract class TtsEngine(protected var context: Context) {
       } else {
         var i = last + 1
         var maxEnd = last + maxLength
-        var bestPriority = TtsEngine.SPLITTERS_COUNT
+        var bestPriority = TtsEngine.NOT_SPLITTER
+        var priority = TtsEngine.NOT_SPLITTER
         if (maxEnd > nextEarcon) maxEnd = nextEarcon
         var end = maxEnd
         while (i < maxEnd) {
           val next = i + 1
-          val option = TtsEngine.splitters.get(text.charAt(i))
-          if (option.isEmpty) i = next else {
-            var priority = option.get
-            if (priority == TtsEngine.SPACE_FOR_THE_BEST && (next >= nextEarcon || text.charAt(next).isWhitespace))
-              priority = TtsEngine.BEST_SPLITTERS_EVER
+          var p = TtsEngine.splitters.getOrElse(text.charAt(i), TtsEngine.NOT_SPLITTER)
+          if (p == TtsEngine.SPACE_FOR_THE_BEST && (next >= maxEnd || text.charAt(next).isWhitespace))
+            p = TtsEngine.BEST_SPLITTERS_EVER
+          i = next
+          if (p == TtsEngine.NOT_SPLITTER) {
             if (priority <= bestPriority) {
-              i = next
-              while (i < maxEnd && TtsEngine.splitters.contains(text.charAt(i))) i += 1
               end = i
               bestPriority = priority
-              if (aggressiveMode && priority == TtsEngine.BEST_SPLITTERS_EVER) i = maxEnd // break
-            } else i = next
-          }
+              if (aggressiveMode && priority == TtsEngine.BEST_SPLITTERS_EVER) i = maxEnd // break with reset
+            }
+            priority = TtsEngine.NOT_SPLITTER // reset
+          } else if (p < priority) priority = p
         }
+        if (priority <= bestPriority) end = i
         result.append(new SpeechPart(last, end, false))
         last = end
       }
