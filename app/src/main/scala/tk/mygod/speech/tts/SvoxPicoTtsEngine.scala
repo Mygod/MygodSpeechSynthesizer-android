@@ -3,7 +3,6 @@ package tk.mygod.speech.tts
 import java.io._
 import java.lang.reflect.Field
 import java.lang.{Float => BoxedFloat}
-import java.security.InvalidParameterException
 import java.util
 import java.util.Locale
 import java.util.concurrent.{LinkedBlockingDeque, Semaphore}
@@ -178,8 +177,6 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
     protected def doInBackground(params: AnyRef*): AnyRef = {
       var future: Future[Unit] = null
       try {
-        if (params.length != 2 || !params(0).isInstanceOf[FileOutputStream] || !params(1).isInstanceOf[File])
-          throw new InvalidParameterException("Params incorrect.")
         output = params(0).asInstanceOf[FileOutputStream]
         val cacheDir = params(1).asInstanceOf[File]
         if (isCancelled) return null

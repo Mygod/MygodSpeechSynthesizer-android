@@ -2,7 +2,6 @@ package tk.mygod.speech.tts
 
 import java.io._
 import java.net.{URL, URLEncoder}
-import java.security.InvalidParameterException
 import java.util.concurrent.{ArrayBlockingQueue, Semaphore}
 
 import android.content.Context
@@ -135,8 +134,6 @@ final class GoogleTranslateTtsEngine(context: Context) extends TtsEngine(context
 
   private class SynthesizeToStreamTask extends AsyncTask[AnyRef, AnyRef, AnyRef] {
     protected def doInBackground(params: AnyRef*): AnyRef = {
-      if (params.length != 1 && !params(0).isInstanceOf[OutputStream])
-        throw new InvalidParameterException("Params incorrect.")
       val output = params(0).asInstanceOf[OutputStream]
       try for (part <- new SpeechSplitter(currentText, startOffset)) {
         if (isCancelled) return null

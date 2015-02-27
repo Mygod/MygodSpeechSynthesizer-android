@@ -2,6 +2,7 @@ package tk.mygod.text
 
 import java.io.StringReader
 import java.lang.reflect.Field
+import java.nio.CharBuffer
 
 import android.os.{Build, PersistableBundle}
 import android.text.style.TtsSpan
@@ -268,11 +269,9 @@ object SsmlDroid {
       Mappings.addMapping(i - length, j)
       Mappings.addMapping(i, j + length)
       i = 0
-      while (i < length) {
-        Result.append(if (ignoreSingleLineBreaks && i > 0 && i < ch.length - 1 && ch(i - 1) != '\n' && ch(i) == '\n' &&
-          ch(i + 1) != '\n') ' ' else ch(i))
-        i += 1
-      }
+      if (ignoreSingleLineBreaks)
+        for (i <- 1 until length - 1) if (ch(i - 1) != '\n' && ch(i) == '\n' && ch(i + 1) != '\n') ch(i) = ' '
+      Result.append(CharBuffer.wrap(ch, start, length))
     }
   }
 
