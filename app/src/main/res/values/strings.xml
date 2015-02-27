@@ -40,11 +40,6 @@
     <string name="settings_old_timey_save_ui_summary">Use old-timey save user interface instead of the fancy Storage
         Access Framework in 4.4+.</string>
 
-    <string name="title_activity_save_file">Choose save location</string>
-    <string name="file_save_file_name_hint">File name</string>
-    <string name="action_create_dir">Create folder</string>
-    <string name="dialog_overwrite_confirm_title">Are you sure you want to overwrite this file?</string>
-    <string name="dialog_create_dir_title">Enter the directory name:</string>
     <string name="action_tts_cardinal">Cardinal</string>
     <string name="action_tts_date">Date</string>
     <string name="action_tts_decimal">Decimal</string>

@@ -7,7 +7,6 @@
     <color name="material_purple_400">#AB47BC</color>
     <color name="material_purple_500">#9C27B0</color>
     <color name="material_purple_700">#7B1FA2</color>
-    <color name="flatButtonText">#000</color>
     <style name="Theme.Material.PurpleBase" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="colorPrimary">@color/material_purple_500</item>
         <item name="colorPrimaryDark">@color/material_purple_700</item>
