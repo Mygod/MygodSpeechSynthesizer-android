@@ -31,7 +31,7 @@ object TtsEngineManager {
 
   def selectEngine(id: String) {
     if (onSelectedEngineChangingListener != null) onSelectedEngineChangingListener.onSelectedEngineChanging
-    if (!engines.selectEngine(id)) throw new RuntimeException
+    if (!engines.selectEngine(id)) return
     editor.putString("engine", id)
     editor.apply
     engines.selectedEngine.setVoice(pref.getString("engine." + id, ""))

@@ -19,11 +19,10 @@ import scala.collection.{immutable, mutable}
  * @author Mygod
  */
 object GoogleTranslateTtsEngine {
-  private[tts] val voices = Array("af", "sq", "ar", "hy", "bs", "ca", "zh-CN", "zh-TW", "hr", "cs", "da", "nl", "en",
-                                  "eo", "fi", "fr", "de", "el", "ht", "hi", "hu", "is", "id", "it", "ja", "la", "lv",
-                                  "mk", "no", "pl", "pt", "ro", "ru", "sr", "sk", "es", "sw", "sv", "ta", "th", "tr",
-                                  "vi", "cy").map(lang => new LocaleWrapper(lang).asInstanceOf[TtsVoice])
-                              .to[immutable.SortedSet]
+  private val voices = Array("af", "sq", "ar", "hy", "bs", "ca", "zh-CN", "zh-TW", "hr", "cs", "da", "nl", "en", "eo",
+                             "fi", "fr", "de", "el", "ht", "hi", "hu", "is", "id", "it", "ja", "la", "lv", "mk", "no",
+                             "pl", "pt", "ro", "ru", "sr", "sk", "es", "sw", "sv", "ta", "th", "tr", "vi", "cy")
+                         .map(lang => new LocaleWrapper(lang).asInstanceOf[TtsVoice]).to[immutable.SortedSet]
 }
 
 final class GoogleTranslateTtsEngine(context: Context) extends TtsEngine(context) {
@@ -172,7 +171,7 @@ final class GoogleTranslateTtsEngine(context: Context) extends TtsEngine(context
     }
   }
 
-  private var voice: LocaleWrapper = null
+  private var voice: LocaleWrapper = new LocaleWrapper("en")
   private var currentText: CharSequence = null
   private var startOffset: Int = 0
   private var speakTask: SpeakTask = null
