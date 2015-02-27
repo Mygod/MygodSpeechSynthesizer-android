@@ -442,9 +442,12 @@ final class MainActivity extends ToolbarActivity with OnTtsSynthesisCallbackList
   private def getSaveFileName = if (displayName == null) FileUtils.getTempFileName else displayName
 
   private def getText = {
-    val text = inputText.getText.toString
+    var text = inputText.getText.toString
     val temp = text.replaceAll("\r", "")
-    if (text != temp) inputText.setText(temp)
+    if (text != temp) {
+      inputText.setText(temp)
+      text = inputText.getText.toString // get again to keep in sync
+    }
     if (TtsEngineManager.getEnableSsmlDroid) {
       val parser: SsmlDroid.Parser = SsmlDroid.fromSsml(text, TtsEngineManager.getIgnoreSingleLineBreak, null)
       mappings = parser.Mappings

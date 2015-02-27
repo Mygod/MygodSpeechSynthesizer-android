@@ -16,16 +16,13 @@ import android.speech.tts.TextToSpeech.{EngineInfo, OnInitListener}
 import android.speech.tts.{TextToSpeech, UtteranceProgressListener, Voice}
 import android.text.TextUtils
 import android.util.Log
-import tk.mygod.speech.tts.TtsEngine.SpeechPart
 import tk.mygod.util.UriUtils._
 import tk.mygod.util.{FileUtils, IOUtils, LocaleUtils}
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 /**
  * @author Mygod
@@ -79,16 +76,15 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
   private final class SpeakTask extends AsyncTask[AnyRef, AnyRef, AnyRef] {
     protected def doInBackground(params: AnyRef*): AnyRef = { // note: https://issues.scala-lang.org/browse/SI-1459
       try {
-        val parts = splitSpeech(currentText, startOffset, true)
         lastPart = null
-        for (part <- parts) try {
+        for (part <- new SpeechSplitter(currentText, startOffset, getMaxLength, true)) try {
           if (isCancelled) {
             tts.stop
             return null
           }
-          val cs = currentText.subSequence(part.Start, part.End)
+          val cs = currentText.subSequence(part.start, part.end)
           val id = part.toString
-          if (part.IsEarcon) {
+          if (part.isEarcon) {
             val uri = cs.toString
             tts.synchronized {
               SvoxPicoTtsEngine.earcons.get(tts).asInstanceOf[Map[String, Uri]].put(uri, uri)
@@ -99,11 +95,11 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
           else if (Build.VERSION.SDK_INT >= 21) tts.speak(cs, TextToSpeech.QUEUE_ADD, getParamsL(id), id)
           else tts.speak(cs.toString, TextToSpeech.QUEUE_ADD, getParams(id))
           lastPart = part
-          if (listener != null) listener.onTtsSynthesisPrepared(part.End)
+          if (listener != null) listener.onTtsSynthesisPrepared(part.end)
         } catch {
           case e: Exception =>
             e.printStackTrace
-            if (listener != null) listener.onTtsSynthesisError(part.Start, part.End)
+            if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
         }
       } catch {
         case e: Exception =>
@@ -118,129 +114,99 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
 
   private final class SynthesizeToStreamTask extends AsyncTask[AnyRef, AnyRef, AnyRef] {
     private var output: FileOutputStream = _
-    private var parts: ArrayBuffer[SpeechPart] = _
-    val mergeQueue = new LinkedBlockingDeque[String]
-    private val fileMap = new mutable.HashMap[String, File]
+    val mergeQueue = new LinkedBlockingDeque[SpeechPart]
     val synthesizeLock = new Semaphore(1)
 
-    private class BackgroundThread extends Thread {
-      private var header: Array[Byte] = _
-      private var length: Long = _
-      private var partIndex: Int = _
-
-      private def processFile(part: TtsEngine.SpeechPart, id: String) {
-        var cache: File = null
-        var input: InputStream = null
-        try {
-          if (part != parts(partIndex)) throw new IOException("Input is not in order!")
-          partIndex += 1
-          if (isCancelled) return
-          if (listener != null) listener.onTtsSynthesisCallback(part.Start, part.End)
-          val option = fileMap.get(id)
-          input = if (option.isEmpty)
-              context.getContentResolver.openInputStream(currentText.subSequence(part.Start, part.End))
-            else {
-              cache = option.get
-              new FileInputStream(cache)
-            }
-          if (header == null) {
-            header = new Array[Byte](44)
-            if (input.read(header, 0, 44) != 44) throw new IOException("File malformed.")
-            output.write(header, 0, 44)
-          } else if (input.skip(44) != 44) throw new IOException("File malformed.")
-          length += IOUtils.copy(input, output)
-          if (listener != null) listener.onTtsSynthesisCallback(part.End, part.End)
-        } catch {
-          case e: Exception =>
-            e.printStackTrace
-            if (listener != null) listener.onTtsSynthesisError(part.Start, part.End)
-        } finally {
-          if (input != null) try input.close catch {
-            case e: IOException => e.printStackTrace
-          }
-          fileMap.remove(id)
-          if (cache != null && !cache.delete) cache.deleteOnExit
-        }
-      }
-
-      private def processEarcons {
-        var part: SpeechPart = null
-        while (partIndex < parts.size && { part = parts.get(partIndex); part }.IsEarcon) {
-          processFile(part, part.toString)
-          part = parts.get(partIndex)
-        }
-      }
-
-      override def run {
-        try {
-          processEarcons
-          var id = mergeQueue.take
-          while (!TextUtils.isEmpty(id)) {
-            processFile(SpeechPart.parse(id), id)
-            processEarcons
-            id = mergeQueue.take
-          }
-          if (header != null) {
-            header(40) = length.toByte
-            header(41) = (length >> 8).toByte
-            header(42) = (length >> 16).toByte
-            header(43) = (length >> 24).toByte
-            length += 36
-            header(4) = length.toByte
-            header(5) = (length >> 8).toByte
-            header(6) = (length >> 16).toByte
-            header(7) = (length >> 24).toByte
-            output.getChannel.position(0)
-            output.write(header, 0, 44)
-          }
-        } catch {
-          case e: Exception =>
-            e.printStackTrace
-            if (listener != null) listener.onTtsSynthesisError(0, currentText.length)
-        } finally {
-          try output.close catch {
-            case e: IOException => e.printStackTrace
-          }
-          if (listener != null) listener.onTtsSynthesisFinished
-          synthesizeToStreamTask = null
-        }
-      }
-    }
-
-    protected def doInBackground(params: AnyRef*): AnyRef = {
-      var merger: Thread = null
+    private def merge {
       try {
-        if (params.length != 2 || !params(0).isInstanceOf[FileOutputStream] || !params(1).isInstanceOf[File])
-          throw new InvalidParameterException("Params incorrect.")
-        output = params(0).asInstanceOf[FileOutputStream]
-        val cacheDir = params(1).asInstanceOf[File]
-        parts = splitSpeech(currentText, startOffset, false)
-        if (isCancelled) return null
-        merger = new BackgroundThread
-        merger.start
-        for (part <- parts) {
-          if (isCancelled) return null
-          if (!part.IsEarcon) try {
-            val cache = new File(cacheDir, FileUtils.getTempFileName + part.Start)
-            val id = part.toString
-            fileMap.put(id, cache)
-            synthesizeLock.acquireUninterruptibly
-            val cs = currentText.subSequence(part.Start, part.End)
-            if (Build.VERSION.SDK_INT >= 21) tts.synthesizeToFile(cs, getParamsL(id), cache, id)
-            else tts.synthesizeToFile(cs.toString, getParams(id), cache.getAbsolutePath)
-            synthesizeLock.acquireUninterruptibly
-            synthesizeLock.release
+        var header: Array[Byte] = null
+        var length: Long = 0
+        var part = mergeQueue.take
+        while (part.start >= 0) {
+          var input: InputStream = null
+          try {
+            if (isCancelled) return
+            if (listener != null) listener.onTtsSynthesisCallback(part.start, part.end)
+            input = if (part.isEarcon)
+              context.getContentResolver.openInputStream(currentText.subSequence(part.start, part.end))
+            else new FileInputStream(part.file)
+            if (header == null) {
+              header = new Array[Byte](44)
+              if (input.read(header, 0, 44) != 44) throw new IOException("File malformed.")
+              output.write(header, 0, 44)
+            } else if (input.skip(44) != 44) throw new IOException("File malformed.")
+            length += IOUtils.copy(input, output)
+            if (listener != null) listener.onTtsSynthesisCallback(part.end, part.end)
           } catch {
             case e: Exception =>
               e.printStackTrace
-              if (listener != null) listener.onTtsSynthesisError(part.Start, part.End)
+              if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
+          } finally {
+            if (input != null) try input.close catch {
+              case e: IOException => e.printStackTrace
+            }
+            if (part.file != null && !part.file.delete) part.file.deleteOnExit
           }
+          part = mergeQueue.take
+        }
+        if (header != null) {
+          header(40) = length.toByte
+          header(41) = (length >> 8).toByte
+          header(42) = (length >> 16).toByte
+          header(43) = (length >> 24).toByte
+          length += 36
+          header(4) = length.toByte
+          header(5) = (length >> 8).toByte
+          header(6) = (length >> 16).toByte
+          header(7) = (length >> 24).toByte
+          output.getChannel.position(0)
+          output.write(header, 0, 44)
         }
       } catch {
         case e: Exception =>
           e.printStackTrace
           if (listener != null) listener.onTtsSynthesisError(0, currentText.length)
-      } finally if (merger != null) mergeQueue.add("")
+      } finally {
+        try output.close catch {
+          case e: IOException => e.printStackTrace
+        }
+        if (listener != null) listener.onTtsSynthesisFinished
+        synthesizeToStreamTask = null
+      }
+    }
+
+    protected def doInBackground(params: AnyRef*): AnyRef = {
+      var future: Future[Unit] = null
+      try {
+        if (params.length != 2 || !params(0).isInstanceOf[FileOutputStream] || !params(1).isInstanceOf[File])
+          throw new InvalidParameterException("Params incorrect.")
+        output = params(0).asInstanceOf[FileOutputStream]
+        val cacheDir = params(1).asInstanceOf[File]
+        if (isCancelled) return null
+        future = Future(merge)
+        for (part <- new SpeechSplitter(currentText, startOffset, getMaxLength)) {
+          if (isCancelled) return null
+          if (!part.isEarcon) try {
+            part.file = new File(cacheDir, FileUtils.getTempFileName + part.start)
+            synthesizeLock.acquireUninterruptibly
+            val cs = currentText.subSequence(part.start, part.end)
+            val id = part.toString
+            if (Build.VERSION.SDK_INT >= 21) tts.synthesizeToFile(cs, getParamsL(id), part.file, id)
+            else tts.synthesizeToFile(cs.toString, getParams(id), part.file.getAbsolutePath)
+            synthesizeLock.acquireUninterruptibly
+            synthesizeLock.release  // wait for synthesis
+          } catch {
+            case e: Exception =>
+              e.printStackTrace
+              if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
+          }
+          mergeQueue.add(part)
+        }
+      } catch {
+        case e: Exception =>
+          e.printStackTrace
+          if (listener != null) listener.onTtsSynthesisError(0, currentText.length)
+      } finally if (future != null) mergeQueue.add(new SpeechPart)  // stop sign
       null
     }
   }
@@ -267,7 +233,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
     def onError(utteranceId: String) {
       if (TextUtils.isEmpty(utteranceId)) return
       val part = SpeechPart.parse(utteranceId)
-      if (listener != null) listener.onTtsSynthesisError(part.Start, part.End)
+      if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
       if (synthesizeToStreamTask != null) synthesizeToStreamTask.synthesizeLock.release
     }
 
@@ -279,18 +245,15 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
       }
       val part = SpeechPart.parse(utteranceId)
       if (synthesizeToStreamTask != null) {
-        synthesizeToStreamTask.mergeQueue.add(utteranceId)
         synthesizeToStreamTask.synthesizeLock.release
-        if (listener != null) listener.onTtsSynthesisPrepared(part.End)
-      } else if (speakTask != null) {
-        if (listener != null) listener.onTtsSynthesisCallback(part.End, part.End)
-      }
+        if (listener != null) listener.onTtsSynthesisPrepared(part.end)
+      } else if (speakTask != null) if (listener != null) listener.onTtsSynthesisCallback(part.end, part.end)
     }
 
     def onStart(utteranceId: String) {
       if (listener == null || TextUtils.isEmpty(utteranceId)) return
       val part = SpeechPart.parse(utteranceId)
-      listener.onTtsSynthesisCallback(part.Start, part.End)
+      listener.onTtsSynthesisCallback(part.start, part.end)
     }
   })
 
@@ -392,7 +355,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
   override def getName = engineInfo.label
   protected def getIconInternal = context.getPackageManager.getDrawable(engineInfo.name, engineInfo.icon, null)
   def getMimeType = "audio/x-wav"
-  protected def getMaxLength = if (Build.VERSION.SDK_INT >= 18) TextToSpeech.getMaxSpeechInputLength else 4000
+  def getMaxLength = if (Build.VERSION.SDK_INT >= 18) TextToSpeech.getMaxSpeechInputLength else 4000
 
   override def setPitch(value: Float) = tts.setPitch(value)
   override def setSpeechRate(value: Float) = tts.setSpeechRate(value)

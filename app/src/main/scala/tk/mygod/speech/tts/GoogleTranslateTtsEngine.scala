@@ -29,7 +29,7 @@ object GoogleTranslateTtsEngine {
 final class GoogleTranslateTtsEngine(context: Context) extends TtsEngine(context) {
   private final class SpeakTask extends AsyncTask[AnyRef, AnyRef, AnyRef] {
     private val playbackQueue = new ArrayBlockingQueue[AnyRef](29)
-    private val partMap = new mutable.HashMap[MediaPlayer, TtsEngine.SpeechPart]()
+    private val partMap = new mutable.HashMap[MediaPlayer, SpeechPart]()
     private var playThread: PlayerThread = _
 
     def stop {
@@ -50,18 +50,18 @@ final class GoogleTranslateTtsEngine(context: Context) extends TtsEngine(context
             player = obj.asInstanceOf[MediaPlayer]
             val part = partMap(player)
             try if (!isCancelled) {
-              if (listener != null) listener.onTtsSynthesisCallback(part.Start, part.End)
+              if (listener != null) listener.onTtsSynthesisCallback(part.start, part.end)
               player.setOnCompletionListener(this)
               player.setOnErrorListener(this)
               playLock.acquireUninterruptibly
               player.start
               playLock.acquireUninterruptibly
               playLock.release
-              if (listener != null) listener.onTtsSynthesisCallback(part.End, part.End)
+              if (listener != null) listener.onTtsSynthesisCallback(part.end, part.end)
             } catch {
               case e: Exception =>
                 e.printStackTrace
-                if (listener != null) listener.onTtsSynthesisError(part.Start, part.End)
+                if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
             } finally {
               try player.stop catch {
                 case e: IllegalStateException => e.printStackTrace
@@ -79,13 +79,13 @@ final class GoogleTranslateTtsEngine(context: Context) extends TtsEngine(context
 
       def onCompletion(mp: MediaPlayer) {
         val part = partMap(mp)
-        if (listener != null) listener.onTtsSynthesisCallback(part.End, part.End)
+        if (listener != null) listener.onTtsSynthesisCallback(part.end, part.end)
         playLock.release
       }
 
       def onError(mp: MediaPlayer, what: Int, extra: Int) = {
         val part = partMap(mp)
-        if (listener != null) listener.onTtsSynthesisError(part.Start, part.End)
+        if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
         playLock.release
         false
       }
@@ -93,11 +93,10 @@ final class GoogleTranslateTtsEngine(context: Context) extends TtsEngine(context
 
     protected def doInBackground(params: AnyRef*): AnyRef = { // note: https://issues.scala-lang.org/browse/SI-1459
       try {
-        val parts = splitSpeech(currentText, startOffset, false)
         if (isCancelled) return null
         playThread = new PlayerThread
         playThread.start
-        for (part <- parts) {
+        for (part <- new SpeechSplitter(currentText, startOffset)) {
           if (isCancelled) return null
           var player: MediaPlayer = null
           try {
@@ -105,8 +104,8 @@ final class GoogleTranslateTtsEngine(context: Context) extends TtsEngine(context
             while (failed) try {
               player = new MediaPlayer
               player.setAudioStreamType(AudioManager.STREAM_MUSIC)
-              val str: String = currentText.subSequence(part.Start, part.End).toString
-              player.setDataSource(if (part.IsEarcon) str else getUrl(str))
+              val str: String = currentText.subSequence(part.start, part.end).toString
+              player.setDataSource(if (part.isEarcon) str else getUrl(str))
               player.prepare
               failed = false
             } catch {
@@ -118,12 +117,12 @@ final class GoogleTranslateTtsEngine(context: Context) extends TtsEngine(context
             if (isCancelled) return null
             partMap.put(player, part)
             playbackQueue.put(player)
-            if (listener != null) listener.onTtsSynthesisPrepared(part.End)
+            if (listener != null) listener.onTtsSynthesisPrepared(part.end)
           } catch {
             case e: Exception =>
               e.printStackTrace
               if (player != null) player.release
-              if (listener != null) listener.onTtsSynthesisError(part.Start, part.End)
+              if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
           }
         }
       } catch {
@@ -140,20 +139,20 @@ final class GoogleTranslateTtsEngine(context: Context) extends TtsEngine(context
       if (params.length != 1 && !params(0).isInstanceOf[OutputStream])
         throw new InvalidParameterException("Params incorrect.")
       val output = params(0).asInstanceOf[OutputStream]
-      try for (part <- splitSpeech(currentText, startOffset, false)) {
+      try for (part <- new SpeechSplitter(currentText, startOffset)) {
         if (isCancelled) return null
         var input: InputStream = null
         try {
-          if (listener != null) listener.onTtsSynthesisCallback(part.Start, part.End)
-          val str = currentText.subSequence(part.Start, part.End).toString
-          input = if (part.IsEarcon) context.getContentResolver.openInputStream(str)
+          if (listener != null) listener.onTtsSynthesisCallback(part.start, part.end)
+          val str = currentText.subSequence(part.start, part.end).toString
+          input = if (part.isEarcon) context.getContentResolver.openInputStream(str)
             else new URL(getUrl(str)).openStream
           IOUtils.copy(input, output)
-          if (listener != null) listener.onTtsSynthesisCallback(part.End, part.End)
+          if (listener != null) listener.onTtsSynthesisCallback(part.end, part.end)
         } catch {
           case e: Exception =>
             e.printStackTrace
-            if (listener != null) listener.onTtsSynthesisError(part.Start, part.End)
+            if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
         } finally if (input != null) try input.close catch {
           case e: IOException => e.printStackTrace
         }
@@ -201,7 +200,6 @@ final class GoogleTranslateTtsEngine(context: Context) extends TtsEngine(context
       case e: Exception => context.getResources.getDrawable(R.drawable.ic_google_translate)
     }
   def getMimeType = "audio/mpeg"
-  protected def getMaxLength = 100
 
   private def getUrl(text: String) =
     "https://translate.google.com/translate_tts?ie=UTF-8&tl=" + voice.code + "&q=" + URLEncoder.encode(text, "UTF-8")
