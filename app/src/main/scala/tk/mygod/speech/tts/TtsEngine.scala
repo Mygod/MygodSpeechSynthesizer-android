@@ -78,7 +78,7 @@ abstract class TtsEngine(protected var context: Context) {
   protected def getMaxLength: Int
 
   protected def splitSpeech(text: CharSequence, startOffset: Int, aggressiveMode: Boolean): ArrayBuffer[SpeechPart] = {
-    var last = startOffset
+    var i = startOffset
     val length = text.length
     val maxLength = getMaxLength
     if (maxLength <= 0) throw new InvalidParameterException("maxLength should be a positive value.")
@@ -88,55 +88,61 @@ abstract class TtsEngine(protected var context: Context) {
     var earconParts: Array[SpeechPart] = null
     text match {
       case spanned: Spanned =>
-        val earcons: Array[EarconSpan] = spanned.getSpans(last, length, classOf[EarconSpan])
+        val earcons = spanned.getSpans(i, length, classOf[EarconSpan])
         earconsLength = earcons.length
         if (earconsLength > 0) {
           earconParts = new Array[SpeechPart](earconsLength)
-          var i = 0
-          while (i < earconsLength) {
-            val span = earcons(i)
-            earconParts(i) = new SpeechPart(spanned.getSpanStart(span), spanned.getSpanEnd(span), true)
-            i += 1
+          var j = 0
+          while (j < earconsLength) {
+            val span = earcons(j)
+            earconParts(j) = new SpeechPart(spanned.getSpanStart(span), spanned.getSpanEnd(span), true)
+            j += 1
           }
           nextEarcon = earconParts(0).Start
         }
     }
     var j = 0
-    while (last < length) {
-      while (last < nextEarcon && TtsEngine.splitters.contains(text.charAt(last))) last += 1
-      if (last < length)
-        if (last == nextEarcon) {
-          val part = earconParts(j)
-          result.append(part)
-          last = part.End
-          j += 1
-          nextEarcon = if (j < earconsLength) earconParts(j).Start else length
-        } else {
-          var i = last + 1
-          var maxEnd = last + maxLength
-          var bestPriority = TtsEngine.NOT_SPLITTER
-          var priority = TtsEngine.NOT_SPLITTER
-          if (maxEnd > nextEarcon) maxEnd = nextEarcon
-          var end = maxEnd
-          while (i < maxEnd) {
-            val next = i + 1
-            var p = TtsEngine.splitters.getOrElse(text.charAt(i), TtsEngine.NOT_SPLITTER)
-            if (p == TtsEngine.SPACE_FOR_THE_BEST && (next >= maxEnd || text.charAt(next).isWhitespace))
-              p = TtsEngine.BEST_SPLITTERS_EVER
-            if (p == TtsEngine.NOT_SPLITTER) {
-              if (priority <= bestPriority) {
-                end = i
-                bestPriority = priority
-                if (aggressiveMode && priority == TtsEngine.BEST_SPLITTERS_EVER) i = maxEnd // break with reset
-              }
-              priority = TtsEngine.NOT_SPLITTER                                             // reset
-            } else if (p < priority) priority = p
-            i = next
-          }
-          if (priority <= bestPriority) end = i
-          result.append(new SpeechPart(last, end, false))
-          last = end
+    var start = -1
+    var end = -1
+    var maxEnd = -1
+    var bestPriority = TtsEngine.NOT_SPLITTER
+    var priority = TtsEngine.NOT_SPLITTER
+    while (i < length) if (start < 0) if (i == nextEarcon) {
+      val part = earconParts(j)
+      result.append(part)
+      i = part.End
+      j += 1
+      nextEarcon = if (j < earconsLength) earconParts(j).Start else length
+    } else {
+      if (!TtsEngine.splitters.contains(text.charAt(i))) {
+        start = i
+        end = i
+        maxEnd = i + maxLength
+        if (maxEnd > nextEarcon) maxEnd = nextEarcon
+        bestPriority = TtsEngine.NOT_SPLITTER
+        priority = TtsEngine.NOT_SPLITTER
+      }
+      i += 1
+    } else if (i < maxEnd) {
+      var next = i + 1
+      var p = TtsEngine.splitters.getOrElse(text.charAt(i), TtsEngine.NOT_SPLITTER)
+      if (p == TtsEngine.SPACE_FOR_THE_BEST && (next >= maxEnd || text.charAt(next).isWhitespace))
+        p = TtsEngine.BEST_SPLITTERS_EVER
+      if (p == TtsEngine.NOT_SPLITTER) {
+        if (priority <= bestPriority) {
+          end = i
+          bestPriority = priority
+          if (aggressiveMode && priority == TtsEngine.BEST_SPLITTERS_EVER) next = maxEnd  // break with reset
         }
+        priority = TtsEngine.NOT_SPLITTER                                                 // reset
+      } else if (p < priority) priority = p
+      i = next
+      if (i >= maxEnd) {
+        if (priority <= bestPriority) end = i
+        result.append(new SpeechPart(start, end, false))
+        i = end
+        start = -1
+      }
     }
     result
   }
