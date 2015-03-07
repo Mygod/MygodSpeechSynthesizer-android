@@ -118,7 +118,8 @@ final class MainActivity extends ToolbarActivity with OnTtsSynthesisCallbackList
     if (failed) inputText.setText(formatDefaultText(R.string.input_text_default, buildTime))
     builder = new NotificationCompat.Builder(this).setContentTitle(R.string.notification_title).setAutoCancel(true)
       .setSmallIcon(R.drawable.ic_communication_message).setColor(getResources.getColor(R.color.material_purple_500))
-      .setContentIntent(pendingIntent[MainActivity])
+      .setContentIntent(pendingIntent[MainActivity]).setCategory(NotificationCompat.CATEGORY_PROGRESS)
+      .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
       .setDeleteIntent(pendingIntentBroadcast("tk.mygod.speech.synthesizer.action.STOP"))
     val intent = getIntent
     if (intent.getData != null) onNewIntent(intent)
