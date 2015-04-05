@@ -228,7 +228,11 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
   }
   tts.setOnUtteranceProgressListener(new UtteranceProgressListener {
     def onError(utteranceId: String) {
-      if (TextUtils.isEmpty(utteranceId)) return
+      if (TextUtils.isEmpty(utteranceId)) {
+        if (listener != null) listener.onTtsSynthesisFinished
+        speakTask = null
+        return
+      }
       val part = SpeechPart.parse(utteranceId)
       if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
       if (synthesizeToStreamTask != null) synthesizeToStreamTask.synthesizeLock.release
