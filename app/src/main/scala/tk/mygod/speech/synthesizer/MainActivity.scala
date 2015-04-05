@@ -2,7 +2,7 @@ package tk.mygod.speech.synthesizer
 
 import java.io.{FileOutputStream, IOException, InputStream, OutputStream}
 import java.net.{URI, URISyntaxException}
-import java.text.{DateFormat, NumberFormat}
+import java.text.{SimpleDateFormat, DateFormat, NumberFormat}
 import java.util.{Calendar, Date, Locale}
 
 import android.app.{Activity, NotificationManager}
@@ -23,7 +23,7 @@ import tk.mygod.app.{SaveFileActivity, ToolbarActivity}
 import tk.mygod.speech.tts.OnTtsSynthesisCallbackListener
 import tk.mygod.text.{SsmlDroid, TextMappings}
 import tk.mygod.util.MethodWrappers._
-import tk.mygod.util.{FileUtils, IOUtils}
+import tk.mygod.util.IOUtils
 import tk.mygod.widget.ObservableScrollView
 
 /**
@@ -438,7 +438,8 @@ final class MainActivity extends ToolbarActivity with OnTtsSynthesisCallbackList
     else if ("selection_end" == start) inputText.getSelectionEnd else 0
   }
 
-  private def getSaveFileName = if (displayName == null) FileUtils.getTempFileName else displayName
+  private def getSaveFileName = if (displayName == null)
+    new SimpleDateFormat("yyyyMMddHHmmssSSS").format(new Date) else displayName
 
   private def getText = {
     var text = inputText.getText.toString

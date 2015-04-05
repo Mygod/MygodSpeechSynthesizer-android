@@ -16,7 +16,7 @@ import android.speech.tts.{TextToSpeech, UtteranceProgressListener, Voice}
 import android.text.TextUtils
 import android.util.Log
 import tk.mygod.util.UriUtils._
-import tk.mygod.util.{FileUtils, IOUtils, LocaleUtils}
+import tk.mygod.util.{IOUtils, LocaleUtils}
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable
@@ -184,7 +184,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
         for (part <- new SpeechSplitter(currentText, startOffset, getMaxLength)) {
           if (isCancelled) return null
           if (!part.isEarcon) try {
-            part.file = new File(cacheDir, FileUtils.getTempFileName + part.start)
+            part.file = File.createTempFile(null, ".wav", cacheDir)
             synthesizeLock.acquireUninterruptibly
             val cs = currentText.subSequence(part.start, part.end)
             val id = part.toString
