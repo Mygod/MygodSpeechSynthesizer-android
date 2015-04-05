@@ -17,7 +17,7 @@ abstract class TtsVoice extends Ordered[TtsVoice] {
   def getDisplayName: String
 
   override def compare(that: TtsVoice) = {
-    val lang = getLocale.getDisplayName.compareTo(that.getLocale.getDisplayName)
-    if (lang == 0) getName.compareTo(that.getName) else lang
+    val lang = getLocale.getDisplayName.compareToIgnoreCase(that.getLocale.getDisplayName)
+    if (lang == 0) getName.compareToIgnoreCase(that.getName) else lang
   }
 }
