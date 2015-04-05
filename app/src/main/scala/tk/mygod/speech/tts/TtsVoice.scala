@@ -16,5 +16,8 @@ abstract class TtsVoice extends Ordered[TtsVoice] {
   def isNetworkConnectionRequired: Boolean
   def getDisplayName: String
 
-  override def compare(that: TtsVoice) = getLocale.getDisplayName.compareTo(that.getLocale.getDisplayName)
+  override def compare(that: TtsVoice) = {
+    val lang = getLocale.getDisplayName.compareTo(that.getLocale.getDisplayName)
+    if (lang == 0) getName.compareTo(that.getName) else lang
+  }
 }
