@@ -184,7 +184,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
         for (part <- new SpeechSplitter(currentText, startOffset, getMaxLength)) {
           if (isCancelled) return null
           if (!part.isEarcon) try {
-            part.file = File.createTempFile(null, ".wav", cacheDir)
+            part.file = File.createTempFile("TEMP", ".wav", cacheDir)
             synthesizeLock.acquireUninterruptibly
             val cs = currentText.subSequence(part.start, part.end)
             val id = part.toString

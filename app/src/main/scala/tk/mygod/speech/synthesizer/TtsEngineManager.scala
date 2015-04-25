@@ -8,11 +8,11 @@ import tk.mygod.speech.tts.{TtsEngine, AvailableTtsEngines}
  * @author Mygod
  */
 object TtsEngineManager {
-  var engines: AvailableTtsEngines = null
-  private var onSelectedEngineChangingListener: OnSelectedEngineChangingListener = null
-  var pref: SharedPreferences = null
-  var editor: SharedPreferences.Editor = null
-  var mainActivity: MainActivity = null
+  var engines: AvailableTtsEngines = _
+  private var onSelectedEngineChangingListener: OnSelectedEngineChangingListener = _
+  var pref: SharedPreferences = _
+  var editor: SharedPreferences.Editor = _
+  var mainActivity: MainActivity = _
 
   def init(context: MainActivity, listener: OnSelectedEngineChangingListener) {
     pref = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
