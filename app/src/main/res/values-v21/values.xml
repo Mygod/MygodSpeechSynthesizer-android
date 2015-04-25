@@ -4,9 +4,4 @@
     <style name="Theme.Material.Purple" parent="Theme.Material.PurpleBase">
         <item name="android:alertDialogTheme">@style/Theme.Material.Purple.AlertDialog</item>
     </style>
-    <style name="Theme.Material.Purple.AlertDialog" parent="android:Theme.Material.Light.Dialog.Alert">
-        <item name="android:colorPrimary">@color/material_purple_500</item>
-        <item name="android:colorPrimaryDark">@color/material_purple_700</item>
-        <item name="android:colorAccent">@color/material_purple_300</item>
-    </style>
 </resources>

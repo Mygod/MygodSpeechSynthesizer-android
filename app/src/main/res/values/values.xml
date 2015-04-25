@@ -16,4 +16,9 @@
         <item name="android:navigationBarColor">@color/material_purple_700</item>
     </style>
     <style name="Theme.Material.Purple" parent="Theme.Material.PurpleBase" />
+    <style name="Theme.Material.Purple.AlertDialog" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <item name="colorPrimary">@color/material_purple_500</item>
+        <item name="colorPrimaryDark">@color/material_purple_700</item>
+        <item name="colorAccent">@color/material_purple_300</item>
+    </style>
 </resources>
