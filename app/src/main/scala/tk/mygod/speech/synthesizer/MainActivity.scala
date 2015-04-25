@@ -3,6 +3,7 @@ package tk.mygod.speech.synthesizer
 import java.io.{IOException, InputStream}
 
 import android.content.Intent
+import android.media.AudioManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.{MediaStore, OpenableColumns}
@@ -20,6 +21,7 @@ final class MainActivity extends FragmentStackActivity with LocationObservedActi
 
   protected override def onCreate(icicle: Bundle) {
     super.onCreate(icicle)
+    setVolumeControlStream(AudioManager.STREAM_MUSIC)
     push(mainFragment)
     builder = new NotificationCompat.Builder(this).setContentTitle(R.string.notification_title).setAutoCancel(true)
       .setSmallIcon(R.drawable.ic_communication_message).setColor(getResources.getColor(R.color.material_purple_500))
