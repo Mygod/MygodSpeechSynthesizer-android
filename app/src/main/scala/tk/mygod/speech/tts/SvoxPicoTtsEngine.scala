@@ -86,7 +86,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
           if (part.isEarcon) {
             val uri = cs.toString
             tts.synchronized {
-              SvoxPicoTtsEngine.earcons.get(tts).asInstanceOf[Map[String, Uri]].put(uri, uri)
+              SvoxPicoTtsEngine.earcons.get(tts).asInstanceOf[util.HashMap[String, Uri]].put(uri, uri)
             }
             if (Build.VERSION.SDK_INT >= 21) tts.playEarcon(uri, TextToSpeech.QUEUE_ADD, getParamsL(id), id)
             else tts.playEarcon(uri, TextToSpeech.QUEUE_ADD, getParams(id))

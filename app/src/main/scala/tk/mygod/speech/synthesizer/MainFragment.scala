@@ -139,7 +139,7 @@ final class MainFragment extends ToolbarFragment
   private def processTag(item: MenuItem, source: CharSequence, selection: CharSequence): Boolean = {
     var tag: String = null
     var toast: String = null
-    var selection = 0
+    var position = 0
     var attribute = false
     item.getGroupId | item.getItemId match {
       case R.id.action_tts_cardinal =>
@@ -149,7 +149,7 @@ final class MainFragment extends ToolbarFragment
         try {
           val calendar = Calendar.getInstance
           val locale = Locale.getDefault
-          val str = selection.toString
+          val str = position.toString
           var i = 0
           var failed = true
           while (failed && i < 4) try {
@@ -175,7 +175,7 @@ final class MainFragment extends ToolbarFragment
           formatter.setMinimumFractionDigits(0)
           formatter.setMaximumFractionDigits(15)
           formatter.setGroupingUsed(false)
-          val str = formatter.format(selection.toString.toDouble)
+          val str = formatter.format(position.toString.toDouble)
           val i = str.indexOf('.')
           tag = String.format("decimal integer_part=\"%s\" fractional_part=\"%s\"",
             if (i < 0) str else str.substring(0, i), if (i < 0) "" else str.substring(i + 1))
@@ -189,7 +189,7 @@ final class MainFragment extends ToolbarFragment
         toast = if (selection.length == 0) R.string.action_tts_digits_toast_empty else R.string.action_tts_digits_toast
       case R.id.action_tts_electronic =>
         try {
-          val uri = new URI(selection.toString)
+          val uri = new URI(position.toString)
           val tagBuilder = new StringBuilder("electronic")
           var temp = uri.getScheme
           if (temp != null) tagBuilder.append(String.format(" protocol=\"%s\"", temp))
@@ -239,7 +239,7 @@ final class MainFragment extends ToolbarFragment
         try {
           val calendar = Calendar.getInstance
           val locale = Locale.getDefault
-          val str = selection.toString
+          val str = position.toString
           var i = 0
           var failed = true
           while (failed && i < 4) try {
@@ -278,22 +278,20 @@ final class MainFragment extends ToolbarFragment
       case _ =>
         return true
     }
-    if (attribute) selection = tag.length
-    else {
-      selection = tag.indexOf("\"\"") + 2
+    if (attribute) position = tag.length else {
+      position = tag.indexOf("\"\"") + 2
       if (selection.length == 0) {
         tag = String.format("<%s />", tag)
-        if (selection < 2) selection = tag.length
-      }
-      else {
-        if (selection < 2) selection = tag.length + 2
+        if (position < 2) position = tag.length
+      } else {
+        if (position < 2) position = tag.length + 2
         val i = tag.indexOf(' ')
-        tag = String.format("<%s>%s</%s>", tag, selection: Integer, if (i < 0) tag else tag.substring(0, i))
+        tag = String.format("<%s>%s</%s>", tag, selection, if (i < 0) tag else tag.substring(0, i))
       }
     }
-    inputText.setTextKeepState(source
-      .subSequence(0, selectionStart) + tag + source.subSequence(selectionEnd, source.length))
-    inputText.setSelection(selectionStart + selection)
+    inputText.setTextKeepState(source.subSequence(0, selectionStart) + tag +
+      source.subSequence(selectionEnd, source.length))
+    inputText.setSelection(selectionStart + position)
     if (toast != null) showToast(toast)
     false
   }
@@ -462,8 +460,7 @@ final class MainFragment extends ToolbarFragment
             case ignore: Exception =>
           }
         processTag(earconItem, inputText.getText, uri.toString)
-      }
-      else processTag(earconItem, inputText.getText, "")
+      } else processTag(earconItem, inputText.getText, "")
       case _ => super.onActivityResult(requestCode, resultCode, data)
     }
   }
