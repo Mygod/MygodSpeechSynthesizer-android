@@ -117,7 +117,7 @@ final class MainFragment extends ToolbarFragment
     inputText = result.findViewById(R.id.input_text).asInstanceOf[AppCompatEditText]
     TtsEngineManager.init(getActivity.asInstanceOf[MainActivity], this)
     var failed = true
-    if (TtsEngineManager.getEnableSsmlDroid) try {
+    if (TtsEngineManager.enableSsmlDroid) try {
       inputText.setText(formatDefaultText(IOUtils.readAllText(getResources.openRawResource(R.raw.input_text_default)),
         buildTime))
       failed = false
@@ -320,11 +320,11 @@ final class MainFragment extends ToolbarFragment
   protected override def onStart {
     super.onStart
     cancelNotification
-    styleItem.setVisible(TtsEngineManager.getEnableSsmlDroid)
+    styleItem.setVisible(TtsEngineManager.enableSsmlDroid)
   }
 
   def onMenuItemClick(item: MenuItem) = {
-    val ssml = TtsEngineManager.getEnableSsmlDroid
+    val ssml = TtsEngineManager.enableSsmlDroid
     val mime = if (ssml) "application/ssml+xml" else "text/plain"
     item.getItemId match {
       case R.id.action_style =>
@@ -406,13 +406,13 @@ final class MainFragment extends ToolbarFragment
       inputText.setText(temp)
       text = inputText.getText.toString // get again to keep in sync
     }
-    if (TtsEngineManager.getEnableSsmlDroid) {
-      val parser: SsmlDroid.Parser = SsmlDroid.fromSsml(text, TtsEngineManager.getIgnoreSingleLineBreak, null)
+    if (TtsEngineManager.enableSsmlDroid) {
+      val parser: SsmlDroid.Parser = SsmlDroid.fromSsml(text, TtsEngineManager.ignoreSingleLineBreak, null)
       mappings = parser.Mappings
       parser.Result
     } else {
       mappings = null
-      if (TtsEngineManager.getIgnoreSingleLineBreak) text.replaceAll("(?<!\\n)(\\n)(?!\\n)", " ") else text
+      if (TtsEngineManager.ignoreSingleLineBreak) text.replaceAll("(?<!\\n)(\\n)(?!\\n)", " ") else text
     }
   }
 

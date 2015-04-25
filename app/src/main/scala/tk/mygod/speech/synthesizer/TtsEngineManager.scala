@@ -44,11 +44,12 @@ object TtsEngineManager {
     editor.apply
   }
 
-  def getEnableSsmlDroid = pref.getBoolean("text.enableSsmlDroid", false)
-  def getIgnoreSingleLineBreak = pref.getBoolean("text.ignoreSingleLineBreak", false)
-  def getOldTimeySaveUI = {
+  def enableSsmlDroid = pref.getBoolean("text.enableSsmlDroid", false)
+  def enableSsmlDroid(value: Boolean) = pref.edit.putBoolean("text.enableSsmlDroid", value).apply
+  def ignoreSingleLineBreak = pref.getBoolean("text.ignoreSingleLineBreak", false)
+  def oldTimeySaveUI = {
     val old = Build.VERSION.SDK_INT < 19
     old || pref.getBoolean("appearance.oldTimeySaveUI", false)
   }
-  def getLastSaveDir = pref.getString("fileSystem.lastSaveDir", null)
+  def lastSaveDir = pref.getString("fileSystem.lastSaveDir", null)
 }

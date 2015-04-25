@@ -60,6 +60,8 @@ final class MainActivity extends FragmentStackActivity with LocationObservedActi
           cursor.close
         }
       }
+      if ("application/ssml+xml".equalsIgnoreCase(data.getType) || mainFragment.displayName != null &&
+        mainFragment.displayName.toLowerCase.endsWith(".ssml")) TtsEngineManager.enableSsmlDroid(true)
     } catch {
       case e: IOException =>
         e.printStackTrace
@@ -74,9 +76,9 @@ final class MainActivity extends FragmentStackActivity with LocationObservedActi
     push(settingsFragment)
   }
 
-  def showSave(mimeType: String, fileName: String, requestCode: Int) = if (TtsEngineManager.getOldTimeySaveUI) {
+  def showSave(mimeType: String, fileName: String, requestCode: Int) = if (TtsEngineManager.oldTimeySaveUI) {
       val fragment = new SaveFileFragment(file => mainFragment.save(Uri.fromFile(file), requestCode), mimeType,
-        TtsEngineManager.getLastSaveDir, fileName)
+        TtsEngineManager.lastSaveDir, fileName)
       fragment.setSpawnLocation(getLocationOnScreen)
       push(fragment)
     } else mainFragment.startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT)
