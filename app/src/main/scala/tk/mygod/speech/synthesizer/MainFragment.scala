@@ -6,17 +6,18 @@ import java.text.{DateFormat, NumberFormat, SimpleDateFormat}
 import java.util.{Calendar, Date, Locale}
 
 import android.app.{Activity, NotificationManager}
-import android.content.{Context, Intent}
+import android.content.{ActivityNotFoundException, Context, Intent}
 import android.net.{ParseException, Uri}
 import android.os.{Build, Bundle, ParcelFileDescriptor}
 import android.support.v4.app.NotificationCompat
+import android.support.v7.widget.AppCompatEditText
 import android.support.v7.widget.Toolbar.OnMenuItemClickListener
 import android.text.InputFilter
 import android.view._
 import android.view.inputmethod.InputMethodManager
 import android.webkit.MimeTypeMap
-import android.widget.{EditText, ProgressBar}
-import com.melnykov.fab.{ObservableScrollView, FloatingActionButton}
+import android.widget.ProgressBar
+import com.melnykov.fab.{FloatingActionButton, ObservableScrollView}
 import tk.mygod.CurrentApp
 import tk.mygod.app.ToolbarFragment
 import tk.mygod.speech.tts.OnTtsSynthesisCallbackListener
@@ -43,7 +44,7 @@ object MainFragment {
 final class MainFragment extends ToolbarFragment
   with OnTtsSynthesisCallbackListener with OnSelectedEngineChangingListener with OnMenuItemClickListener {
   private var progressBar: ProgressBar = _
-  var inputText: EditText = _
+  var inputText: AppCompatEditText = _
   private var menu: Menu = _
   private var styleItem: MenuItem = _
   private var earconItem: MenuItem = _
@@ -113,7 +114,7 @@ final class MainFragment extends ToolbarFragment
       }
     } else stopSynthesis)
     val buildTime = CurrentApp.getBuildTime(getActivity)
-    inputText = result.findViewById(R.id.input_text).asInstanceOf[EditText]
+    inputText = result.findViewById(R.id.input_text).asInstanceOf[AppCompatEditText]
     TtsEngineManager.init(getActivity.asInstanceOf[MainActivity], this)
     var failed = true
     if (TtsEngineManager.getEnableSsmlDroid) try {
@@ -137,7 +138,7 @@ final class MainFragment extends ToolbarFragment
   private def processTag(item: MenuItem, source: CharSequence, selection: CharSequence): Boolean = {
     var tag: String = null
     var toast: String = null
-    var selection: Int = 0
+    var selection = 0
     var attribute = false
     item.getGroupId | item.getItemId match {
       case R.id.action_tts_cardinal =>
@@ -339,8 +340,11 @@ final class MainFragment extends ToolbarFragment
           MainFragment.SAVE_SYNTHESIS)
         true
       case R.id.action_open =>
-        startActivityForResult(new Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE)
+        try startActivityForResult(new Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE)
           .setType(mime), MainFragment.OPEN_TEXT)
+        catch {
+          case e: ActivityNotFoundException => showToast(R.string.open_error_no_browser)
+        }
         true
       case R.id.action_save =>
         val extension = if (ssml) ".ssml" else ".txt"
