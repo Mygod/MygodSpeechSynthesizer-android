@@ -323,6 +323,8 @@ final class MainFragment extends ToolbarFragment
   }
 
   def onMenuItemClick(item: MenuItem) = {
+    val ssml = TtsEngineManager.getEnableSsmlDroid
+    val mime = if (ssml) "application/ssml+xml" else "text/plain"
     item.getItemId match {
       case R.id.action_style =>
         selectionStart = inputText.getSelectionStart
@@ -338,12 +340,13 @@ final class MainFragment extends ToolbarFragment
         true
       case R.id.action_open =>
         startActivityForResult(new Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE)
-          .setType("text/plain"), MainFragment.OPEN_TEXT)
+          .setType(mime), MainFragment.OPEN_TEXT)
         true
       case R.id.action_save =>
+        val extension = if (ssml) ".ssml" else ".txt"
         var fileName = getSaveFileName
-        if (!fileName.toLowerCase.endsWith(".txt")) fileName += ".txt"
-        TtsEngineManager.mainActivity.showSave("text/plain", fileName, MainFragment.SAVE_TEXT)
+        if (!fileName.toLowerCase.endsWith(extension)) fileName += extension
+        TtsEngineManager.mainActivity.showSave(mime, fileName, MainFragment.SAVE_TEXT)
         true
       case R.id.action_settings =>
         TtsEngineManager.mainActivity.showSettings
