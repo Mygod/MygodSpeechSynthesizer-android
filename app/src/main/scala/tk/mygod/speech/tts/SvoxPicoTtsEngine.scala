@@ -283,11 +283,13 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
         exc.printStackTrace
         Log.e("SvoxPicoTtsEngine", "Voices not supported: " + engineInfo.name)
     }
-    try voices = Locale.getAvailableLocales.filter(l => tts.isLanguageAvailable(l) != TextToSpeech.LANG_NOT_SUPPORTED)
-                       .map(l => {
-                         tts.setLanguage(l)
-                         new LocaleVoice(tts.getLanguage).asInstanceOf[TtsVoice]
-                       }).to[immutable.SortedSet]
+    try voices = Locale.getAvailableLocales
+      .filter(l => try tts.isLanguageAvailable(l) != TextToSpeech.LANG_NOT_SUPPORTED
+                   catch { case ignore: Exception => false })
+      .map(l => {
+        tts.setLanguage(l)
+        new LocaleVoice(tts.getLanguage).asInstanceOf[TtsVoice]
+      }).to[immutable.SortedSet]
     catch {
       case e: Exception =>
         e.printStackTrace

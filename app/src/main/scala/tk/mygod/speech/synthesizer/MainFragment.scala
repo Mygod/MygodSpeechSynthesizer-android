@@ -447,7 +447,8 @@ final class MainFragment extends ToolbarFragment
     requestCode match {
       case MainFragment.OPEN_TEXT =>
         if (resultCode == Activity.RESULT_OK) TtsEngineManager.mainActivity.onNewIntent(data)
-      case MainFragment.SAVE_TEXT | MainFragment.SAVE_SYNTHESIS => save(data.getData, requestCode)
+      case MainFragment.SAVE_TEXT | MainFragment.SAVE_SYNTHESIS =>
+        if (resultCode == Activity.RESULT_OK) save(data.getData, requestCode)
       case MainFragment.OPEN_EARCON => if (resultCode == Activity.RESULT_OK) {
         val uri = data.getData
         if (Build.VERSION.SDK_INT >= 19)
