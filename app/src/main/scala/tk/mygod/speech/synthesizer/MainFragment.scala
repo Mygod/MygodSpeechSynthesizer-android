@@ -95,7 +95,6 @@ final class MainFragment extends ToolbarFragment
     menu = toolbar.getMenu
     styleItem = menu.findItem(R.id.action_style)
     toolbar.setOnMenuItemClickListener(this)
-    // TODO: result.findViewById(R.id.action_settings).setOnTouchListener(LocationObserver)
     progressBar = result.findViewById(R.id.progressBar).asInstanceOf[ProgressBar]
     fab = result.findViewById(R.id.fab).asInstanceOf[FloatingActionButton]
     fab.attachToScrollView(result.findViewById(R.id.scroller).asInstanceOf[ObservableScrollView])
@@ -125,6 +124,8 @@ final class MainFragment extends ToolbarFragment
       case e: IOException => e.printStackTrace
     }
     if (failed) inputText.setText(formatDefaultText(R.string.input_text_default, buildTime))
+    val intent = TtsEngineManager.mainActivity.getIntent
+    if (intent != null) TtsEngineManager.mainActivity.onNewIntent(intent)
     result
   }
 

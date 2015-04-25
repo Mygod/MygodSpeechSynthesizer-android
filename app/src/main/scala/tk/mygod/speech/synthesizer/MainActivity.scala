@@ -28,8 +28,6 @@ final class MainActivity extends FragmentStackActivity with LocationObservedActi
       .setContentIntent(pendingIntent[MainActivity]).setCategory(NotificationCompat.CATEGORY_PROGRESS)
       .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
       .setDeleteIntent(pendingIntentBroadcast("tk.mygod.speech.synthesizer.action.STOP"))
-    val intent = getIntent
-    if (intent.getData != null) onNewIntent(intent)
   }
 
   override def onNewIntent(data: Intent) {
