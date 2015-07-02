@@ -9,6 +9,7 @@ import android.app.{Activity, NotificationManager}
 import android.content.{ActivityNotFoundException, Context, Intent}
 import android.net.{ParseException, Uri}
 import android.os.{Build, Bundle, ParcelFileDescriptor}
+import android.support.design.widget.FloatingActionButton
 import android.support.v4.app.NotificationCompat
 import android.support.v7.widget.AppCompatEditText
 import android.support.v7.widget.Toolbar.OnMenuItemClickListener
@@ -17,7 +18,6 @@ import android.view._
 import android.view.inputmethod.InputMethodManager
 import android.webkit.MimeTypeMap
 import android.widget.ProgressBar
-import com.melnykov.fab.{FloatingActionButton, ObservableScrollView}
 import tk.mygod.CurrentApp
 import tk.mygod.app.ToolbarFragment
 import tk.mygod.speech.tts.OnTtsSynthesisCallbackListener
@@ -88,7 +88,14 @@ final class MainFragment extends ToolbarFragment
       calendar.get(Calendar.MINUTE): Integer)
   }
 
-  override def onCreateView(inflater: LayoutInflater, container: ViewGroup, savedInstanceState: Bundle): View = {
+  override def isFullscreen = true
+
+  override def onAttach(activity: Activity) {
+    super.onAttach(activity)
+    activity.asInstanceOf[MainActivity].mainFragment = this
+  }
+
+  override def onCreateView(inflater: LayoutInflater, container: ViewGroup, savedInstanceState: Bundle) = {
     val result = inflater.inflate(R.layout.fragment_main, container, false)
     configureToolbar(result, R.string.app_name)
     toolbar.inflateMenu(R.menu.main_activity_actions)
@@ -97,7 +104,6 @@ final class MainFragment extends ToolbarFragment
     toolbar.setOnMenuItemClickListener(this)
     progressBar = result.findViewById(R.id.progressBar).asInstanceOf[ProgressBar]
     fab = result.findViewById(R.id.fab).asInstanceOf[FloatingActionButton]
-    fab.attachToScrollView(result.findViewById(R.id.scroller).asInstanceOf[ObservableScrollView])
     fab.setOnClickListener((v: View) => if (status == MainFragment.IDLE) {
       try {
         status = MainFragment.SPEAKING
@@ -308,7 +314,7 @@ final class MainFragment extends ToolbarFragment
     true
   }
 
-  protected override def onStop {
+  override def onStop {
     if (status != MainFragment.IDLE) {
       inBackground = true
       showNotification(null)
@@ -316,7 +322,7 @@ final class MainFragment extends ToolbarFragment
     super.onStop
   }
 
-  protected override def onStart {
+  override def onStart {
     super.onStart
     cancelNotification
     styleItem.setVisible(TtsEngineManager.enableSsmlDroid)
@@ -381,7 +387,6 @@ final class MainFragment extends ToolbarFragment
     progressBar.setVisibility(View.INVISIBLE)
     if (descriptor != null) descriptor = null
     status = MainFragment.IDLE
-    fab.show
     cancelNotification
   }
 

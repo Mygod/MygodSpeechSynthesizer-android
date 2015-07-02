@@ -15,14 +15,14 @@ import tk.mygod.util.IOUtils
  * @author Mygod
  */
 final class MainActivity extends FragmentStackActivity with LocationObservedActivity {
-  lazy val mainFragment = new MainFragment
-  private lazy val settingsFragment = new SettingsFragment
+  var mainFragment: MainFragment = _
+  var settingsFragment: SettingsFragment = _
   var builder: NotificationCompat.Builder = _
 
   protected override def onCreate(icicle: Bundle) {
     super.onCreate(icicle)
     setVolumeControlStream(AudioManager.STREAM_MUSIC)
-    push(mainFragment)
+    if (mainFragment == null) push(new MainFragment)
     builder = new NotificationCompat.Builder(this).setContentTitle(R.string.notification_title).setAutoCancel(true)
       .setSmallIcon(R.drawable.ic_communication_message).setColor(getResources.getColor(R.color.material_purple_500))
       .setContentIntent(pendingIntent[MainActivity]).setCategory(NotificationCompat.CATEGORY_PROGRESS)
@@ -70,6 +70,7 @@ final class MainActivity extends FragmentStackActivity with LocationObservedActi
   }
 
   def showSettings {
+    if (settingsFragment == null) settingsFragment = new SettingsFragment
     settingsFragment.setSpawnLocation(getLocationOnScreen)
     push(settingsFragment)
   }

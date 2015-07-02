@@ -4,8 +4,8 @@
               android:layout_width="match_parent" android:layout_height="match_parent">
     <include layout="@layout/toolbar_light_dark" />
     <FrameLayout android:id="@+id/content" android:layout_width="match_parent" android:layout_height="match_parent">
-        <com.melnykov.fab.ObservableScrollView android:id="@+id/scroller" android:fillViewport="true"
-                                               android:layout_width="match_parent" android:layout_height="match_parent">
+        <ScrollView android:id="@+id/scroller" android:fillViewport="true"
+                    android:layout_width="match_parent" android:layout_height="match_parent">
             <android.support.v7.widget.AppCompatEditText android:layout_width="fill_parent" android:gravity="top"
                                                          android:layout_height="wrap_content"
                                                          android:background="#00000000" android:id="@+id/input_text"
@@ -13,15 +13,18 @@
                                                          android:paddingRight="15dp" android:paddingBottom="82dp"
                                                          android:inputType="textMultiLine"
                                                          android:imeOptions="flagNoFullscreen" />
-        </com.melnykov.fab.ObservableScrollView>
+        </ScrollView>
         <ProgressBar android:id="@+id/progressBar" style="@style/Widget.AppCompat.ProgressBar.Horizontal"
                      android:layout_width="match_parent" android:layout_height="wrap_content"
                      android:visibility="invisible" android:layout_marginTop="-8dp" />
-        <com.melnykov.fab.FloatingActionButton android:id="@+id/fab" android:layout_gravity="end|bottom|right"
-                                               android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                               android:src="@drawable/ic_av_mic_none" android:layout_margin="16dp"
-                                               android:stateListAnimator="@anim/fab_elevation"
-                                               app:fab_colorNormal="@color/material_purple_500"
-                                               app:fab_colorPressed="@color/material_purple_400"/>
+        <android.support.design.widget.FloatingActionButton android:id="@+id/fab"
+                                                            android:layout_gravity="end|bottom|right"
+                                                            android:layout_width="wrap_content"
+                                                            android:layout_height="wrap_content"
+                                                            android:src="@drawable/ic_av_mic_none"
+                                                            android:layout_margin="16dp"
+                                                            app:elevation="6dp"
+                                                            app:pressedTranslationZ="6dp"
+                                                            app:borderWidth="0dp" />
     </FrameLayout>
 </LinearLayout>
