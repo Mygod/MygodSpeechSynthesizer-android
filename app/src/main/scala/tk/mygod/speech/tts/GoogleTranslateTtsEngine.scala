@@ -6,8 +6,9 @@ import java.util.concurrent.{ArrayBlockingQueue, Semaphore}
 
 import android.content.Context
 import android.media.{AudioManager, MediaPlayer}
-import android.os.AsyncTask
+import android.support.v4.content.ContextCompat
 import android.text.TextUtils
+import tk.mygod.concurrent.StoppableFuture
 import tk.mygod.speech.synthesizer.R
 import tk.mygod.util.IOUtils
 import tk.mygod.util.UriUtils._
@@ -25,55 +26,58 @@ object GoogleTranslateTtsEngine {
 }
 
 final class GoogleTranslateTtsEngine(context: Context) extends TtsEngine(context) {
-  private final class SpeakTask extends AsyncTask[AnyRef, AnyRef, AnyRef] {
+  private final class SpeakTask(private val currentText: CharSequence, private val startOffset: Int,
+                                finished: () => Unit = null) extends StoppableFuture(finished) {
     private val playbackQueue = new ArrayBlockingQueue[AnyRef](29)
-    private val partMap = new mutable.HashMap[MediaPlayer, SpeechPart]()
-    private var playThread: PlayerThread = _
+    private val partMap = new mutable.HashMap[MediaPlayer, SpeechPart]
+    private val manager = new PlayerManager
 
-    def stop {
-      if (isCancelled) return
-      cancel(false)
-      if (playThread == null || playThread.player == null) return
-      if (playThread.player.isPlaying) playThread.player.stop
+    override def stop {
+      if (isStopped) return
+      super.stop
+      manager.stop
     }
 
-    private class PlayerThread extends Thread with MediaPlayer.OnCompletionListener with MediaPlayer.OnErrorListener {
+    private class PlayerManager extends StoppableFuture
+      with MediaPlayer.OnCompletionListener with MediaPlayer.OnErrorListener {
       var player: MediaPlayer = _
       private final val playLock = new Semaphore(1)
 
-      override def run {
-        try {
-          var obj = playbackQueue.take
-          while (obj.isInstanceOf[MediaPlayer]) {
-            player = obj.asInstanceOf[MediaPlayer]
-            val part = partMap(player)
-            try if (!isCancelled) {
-              if (listener != null) listener.onTtsSynthesisCallback(part.start, part.end)
-              player.setOnCompletionListener(this)
-              player.setOnErrorListener(this)
-              playLock.acquireUninterruptibly
-              player.start
-              playLock.acquireUninterruptibly
-              playLock.release
-              if (listener != null) listener.onTtsSynthesisCallback(part.end, part.end)
-            } catch {
-              case e: Exception =>
-                e.printStackTrace
-                if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
-            } finally {
-              try player.stop catch {
-                case e: IllegalStateException => e.printStackTrace
-              }
-              player.release
-              obj = playbackQueue.take
-            }
-          }
-          speakTask = null
-        } catch {
-          case e: InterruptedException => e.printStackTrace
-        }
-        if (listener != null) listener.onTtsSynthesisFinished
+      override def stop {
+        if (isStopped) return
+        super.stop
+        if (player != null) player.stop
       }
+
+      def work = try {
+        var obj = playbackQueue.take
+        while (obj.isInstanceOf[MediaPlayer]) {
+          player = obj.asInstanceOf[MediaPlayer]
+          val part = partMap(player)
+          try if (!isStopped) {
+            if (listener != null) listener.onTtsSynthesisCallback(part.start, part.end)
+            player.setOnCompletionListener(this)
+            player.setOnErrorListener(this)
+            playLock.acquireUninterruptibly
+            player.start
+            playLock.acquireUninterruptibly
+            playLock.release
+            if (listener != null) listener.onTtsSynthesisCallback(part.end, part.end)
+          } catch {
+            case e: Exception =>
+              e.printStackTrace
+              if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
+          } finally {
+            try player.stop catch {
+              case e: IllegalStateException => e.printStackTrace
+            }
+            player.release
+            obj = playbackQueue.take
+          }
+        }
+      } catch {
+        case e: InterruptedException => e.printStackTrace
+      } finally if (listener != null) listener.onTtsSynthesisFinished
 
       def onCompletion(mp: MediaPlayer) {
         val part = partMap(mp)
@@ -89,88 +93,77 @@ final class GoogleTranslateTtsEngine(context: Context) extends TtsEngine(context
       }
     }
 
-    protected def doInBackground(params: AnyRef*): AnyRef = { // note: https://issues.scala-lang.org/browse/SI-1459
-      try {
-        if (isCancelled) return null
-        playThread = new PlayerThread
-        playThread.start
-        for (part <- new SpeechSplitter(currentText, startOffset)) {
-          if (isCancelled) return null
-          var player: MediaPlayer = null
-          try {
-            var failed = true
-            while (failed) try {
-              player = new MediaPlayer
-              player.setAudioStreamType(AudioManager.STREAM_MUSIC)
-              val str: String = currentText.subSequence(part.start, part.end).toString
-              player.setDataSource(if (part.isEarcon) str else getUrl(str))
-              player.prepare
-              failed = false
-            } catch {
-              case e: IOException =>
-                if (!("Prepare failed.: status=0x1" == e.getMessage)) throw e
-                player.release
-                Thread.sleep(1000)
-            }
-            if (isCancelled) return null
-            partMap.put(player, part)
-            playbackQueue.put(player)
-            if (listener != null) listener.onTtsSynthesisPrepared(part.end)
-          } catch {
-            case e: Exception =>
-              e.printStackTrace
-              if (player != null) player.release
-              if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
-          }
-        }
-      } catch {
-        case e: Exception =>
-          e.printStackTrace
-          if (listener != null) listener.onTtsSynthesisError(0, currentText.length)
-      } finally if (playThread != null) playbackQueue.add(new AnyRef)
-      null
-    }
-  }
-
-  private class SynthesizeToStreamTask extends AsyncTask[AnyRef, AnyRef, AnyRef] {
-    protected def doInBackground(params: AnyRef*): AnyRef = {
-      val output = params(0).asInstanceOf[OutputStream]
-      try for (part <- new SpeechSplitter(currentText, startOffset)) {
-        if (isCancelled) return null
-        var input: InputStream = null
+    def work: Unit = try {
+      if (isStopped) return
+      for (part <- new SpeechSplitter(currentText, startOffset)) {
+        if (isStopped) return
+        var player: MediaPlayer = null
         try {
-          if (listener != null) listener.onTtsSynthesisCallback(part.start, part.end)
-          val str = currentText.subSequence(part.start, part.end).toString
-          input = if (part.isEarcon) context.getContentResolver.openInputStream(str)
-            else new URL(getUrl(str)).openStream
-          IOUtils.copy(input, output)
-          if (listener != null) listener.onTtsSynthesisCallback(part.end, part.end)
+          var failed = true
+          while (failed) try {
+            player = new MediaPlayer
+            player.setAudioStreamType(AudioManager.STREAM_MUSIC)
+            val str: String = currentText.subSequence(part.start, part.end).toString
+            player.setDataSource(if (part.isEarcon) str else getUrl(str))
+            player.prepare
+            failed = false
+          } catch {
+            case e: IOException =>
+              if (!("Prepare failed.: status=0x1" == e.getMessage)) throw e
+              player.release
+              Thread.sleep(1000)
+          }
+          if (isStopped) return
+          partMap.put(player, part)
+          playbackQueue.put(player)
+          if (listener != null) listener.onTtsSynthesisPrepared(part.end)
         } catch {
           case e: Exception =>
             e.printStackTrace
+            if (player != null) player.release
             if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
-        } finally if (input != null) try input.close catch {
-          case e: IOException => e.printStackTrace
         }
+      }
+    } catch {
+      case e: Exception =>
+        e.printStackTrace
+        if (listener != null) listener.onTtsSynthesisError(0, currentText.length)
+    } finally if (manager != null) playbackQueue.add(new AnyRef)
+  }
+
+  private class SynthesizeToStreamTask(private val currentText: CharSequence, private val startOffset: Int,
+                                       private val output: OutputStream, finished: () => Unit = null)
+    extends StoppableFuture(finished) {
+    def work: Unit = try for (part <- new SpeechSplitter(currentText, startOffset)) {
+      if (isStopped) return
+      var input: InputStream = null
+      try {
+        if (listener != null) listener.onTtsSynthesisCallback(part.start, part.end)
+        val str = currentText.subSequence(part.start, part.end).toString
+        input = if (part.isEarcon) context.getContentResolver.openInputStream(str)
+        else new URL(getUrl(str)).openStream
+        IOUtils.copy(input, output)
+        if (listener != null) listener.onTtsSynthesisCallback(part.end, part.end)
       } catch {
         case e: Exception =>
           e.printStackTrace
-          if (listener != null) listener.onTtsSynthesisError(0, currentText.length)
-      } finally try output.close catch {
+          if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
+      } finally if (input != null) try input.close catch {
         case e: IOException => e.printStackTrace
       }
-      null
-    }
-
-    protected override def onPostExecute(arg: AnyRef) {
-      synthesizeToStreamTask = null
+    } catch {
+      case e: Exception =>
+        e.printStackTrace
+        if (listener != null) listener.onTtsSynthesisError(0, currentText.length)
+    } finally {
+      try output.close catch {
+        case e: IOException => e.printStackTrace
+      }
       if (listener != null) listener.onTtsSynthesisFinished
     }
   }
 
   private var voice: LocaleWrapper = new LocaleWrapper("en")
-  private var currentText: CharSequence = null
-  private var startOffset: Int = 0
   private var speakTask: SpeakTask = null
   private var synthesizeToStreamTask: SynthesizeToStreamTask = null
 
@@ -193,7 +186,7 @@ final class GoogleTranslateTtsEngine(context: Context) extends TtsEngine(context
   override def getName = context.getResources.getString(R.string.google_translate_tts_engine_name)
   protected def getIconInternal = try context.getPackageManager.getApplicationIcon("com.google.android.apps.translate")
     catch {
-      case e: Exception => context.getResources.getDrawable(R.drawable.ic_google_translate)
+      case e: Exception => ContextCompat.getDrawable(context, R.drawable.ic_google_translate)
     }
   def getMimeType = "audio/mpeg"
 
@@ -201,24 +194,18 @@ final class GoogleTranslateTtsEngine(context: Context) extends TtsEngine(context
     "https://translate.google.com/translate_tts?ie=UTF-8&tl=" + voice.code + "&q=" + URLEncoder.encode(text, "UTF-8")
 
   def speak(text: CharSequence, startOffset: Int) {
-    currentText = text
-    this.startOffset = startOffset
     synthesizeToStreamTask = null
-    speakTask = new SpeakTask
-    speakTask.execute()
+    speakTask = new SpeakTask(text, startOffset, () => speakTask = null)
   }
 
   def synthesizeToStream(text: CharSequence, startOffset: Int, output: FileOutputStream, cacheDir: File) {
-    currentText = text
-    this.startOffset = startOffset
     speakTask = null
-    synthesizeToStreamTask = new SynthesizeToStreamTask()
-    synthesizeToStreamTask.execute(output)
+    synthesizeToStreamTask = new SynthesizeToStreamTask(text, startOffset, output, () => synthesizeToStreamTask = null)
   }
 
   def stop {
     if (speakTask != null) speakTask.stop
-    if (synthesizeToStreamTask != null) synthesizeToStreamTask.cancel(false)
+    if (synthesizeToStreamTask != null) synthesizeToStreamTask.stop
   }
   def onDestroy = stop
 }

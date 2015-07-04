@@ -36,7 +36,8 @@ object SynthesisService {
   
   def read[T, U](action: => T, fail: PartialFunction[Throwable, U] = FailureHandler) =
     if (SynthesisService.ready) action else Future(action) onFailure fail
-  def write[T, U](action: => T, fail: PartialFunction[Throwable, U] = FailureHandler) = read(synchronized(action), fail)
+  def write[T, U](action: => T, fail: PartialFunction[Throwable, U] = FailureHandler) =
+    read(SynthesisService.synchronized(action), fail)
 }
 
 final class SynthesisService extends Service with ContextPlus with OnTtsSynthesisCallbackListener {
