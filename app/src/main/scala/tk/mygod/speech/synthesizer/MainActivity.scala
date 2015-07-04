@@ -46,7 +46,7 @@ final class MainActivity extends FragmentStackActivity with LocationObservedActi
       val uri = data.getData
       if (uri == null) return
       if (SynthesisService.ready && SynthesisService.instance.status != SynthesisService.IDLE) {
-        showToast(R.string.error_synthesis_in_progress)
+        App.mainFragment.makeSnackbar(R.string.error_synthesis_in_progress).show
         return
       }
       input = getContentResolver.openInputStream(uri)
@@ -71,7 +71,7 @@ final class MainActivity extends FragmentStackActivity with LocationObservedActi
     } catch {
       case e: IOException =>
         e.printStackTrace
-        showToast(String.format(R.string.open_error, e.getMessage))
+        App.mainFragment.makeSnackbar(String.format(R.string.open_error, e.getMessage))
     } finally if (input != null) try input.close catch {
       case e: IOException => e.printStackTrace
     }

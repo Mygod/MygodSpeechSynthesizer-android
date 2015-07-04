@@ -9,7 +9,7 @@ import android.app.Activity
 import android.content._
 import android.net.{ParseException, Uri}
 import android.os.{Build, Bundle}
-import android.support.design.widget.FloatingActionButton
+import android.support.design.widget.{Snackbar, CoordinatorLayout, FloatingActionButton}
 import android.support.v7.widget.AppCompatEditText
 import android.support.v7.widget.Toolbar.OnMenuItemClickListener
 import android.text.InputFilter
@@ -433,4 +433,7 @@ final class MainFragment extends ToolbarFragment
     inputText.setFilters(MainFragment.noFilters)
     progressBar.setVisibility(View.INVISIBLE)
   }
+
+  override def makeSnackbar(text: CharSequence, duration: Int = Snackbar.LENGTH_LONG, view: View = fab) =
+    super.makeSnackbar(text, duration, view)
 }

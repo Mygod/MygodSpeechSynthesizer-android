@@ -20,3 +20,5 @@
 -ignorewarnings
 # temporary workaround; see Scala issue SI-5397
 -keep class scala.collection.SeqLike { public protected *; }
+# see bug: https://code.google.com/p/android/issues/detail?id=178339
+-keepclassmembers class android.support.design.widget.FloatingActionButton$Behavior { public <init>(); }
