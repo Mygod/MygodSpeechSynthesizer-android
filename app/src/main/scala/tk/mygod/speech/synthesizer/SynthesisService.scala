@@ -6,7 +6,7 @@ import java.util.concurrent.Semaphore
 import android.app.{NotificationManager, Service}
 import android.content.{Context, Intent}
 import android.net.Uri
-import android.os.ParcelFileDescriptor
+import android.os.{PowerManager, ParcelFileDescriptor}
 import android.support.annotation.IntDef
 import android.support.v4.app.NotificationCompat
 import tk.mygod.concurrent.FailureHandler
@@ -50,6 +50,7 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
   private var lastText: String = _
   private lazy val notificationManager =
     getSystemService(Context.NOTIFICATION_SERVICE).asInstanceOf[NotificationManager]
+  private var wakeLock: PowerManager#WakeLock = _
   var textLength: Int = _
   var prepared: Int = -1
   var currentStart: Int = -1
@@ -67,6 +68,9 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
   var status: Int = _
 
   override def onCreate {
+    wakeLock = getSystemService(Context.POWER_SERVICE).asInstanceOf[PowerManager]
+      .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SynthesisService")
+    wakeLock.acquire
     super.onCreate
     val engineID = App.pref.getString("engine", "")
     engines = new AvailableTtsEngines(this)
@@ -90,6 +94,7 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
     super.onDestroy
     SynthesisService._instance = null
     SynthesisService.initLock.acquireUninterruptibly
+    wakeLock.release
   }
 
   private def showNotification(text: CharSequence = null) = if (status == SynthesisService.IDLE) lastText = null else {
