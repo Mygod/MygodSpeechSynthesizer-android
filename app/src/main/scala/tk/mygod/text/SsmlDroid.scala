@@ -275,8 +275,7 @@ object SsmlDroid {
     }
   }
 
-  def fromSsml(source: String, ignoreSingleLineBreaks: Boolean,
-               customHandler: SsmlDroid.TagHandler): SsmlDroid.Parser = {
+  def fromSsml(source: String, ignoreSingleLineBreaks: Boolean = false, customHandler: SsmlDroid.TagHandler = null) = {
     val src = String.format("<speak>%s</speak>", source)
     val reader = XMLReaderFactory.createXMLReader("org.ccil.cowan.tagsoup.Parser")
     val result = new SsmlDroid.Parser(src, customHandler, reader, ignoreSingleLineBreaks)

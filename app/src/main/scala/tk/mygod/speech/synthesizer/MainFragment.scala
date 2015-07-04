@@ -1,16 +1,15 @@
 package tk.mygod.speech.synthesizer
 
-import java.io.{FileOutputStream, IOException, OutputStream}
+import java.io.{IOException, OutputStream}
 import java.net.{URI, URISyntaxException}
-import java.text.{DateFormat, NumberFormat, SimpleDateFormat}
+import java.text.{DateFormat, NumberFormat}
 import java.util.{Calendar, Date, Locale}
 
-import android.app.{Activity, NotificationManager}
-import android.content.{ActivityNotFoundException, Context, Intent}
+import android.app.Activity
+import android.content._
 import android.net.{ParseException, Uri}
-import android.os.{Build, Bundle, ParcelFileDescriptor}
+import android.os.{Build, Bundle}
 import android.support.design.widget.FloatingActionButton
-import android.support.v4.app.NotificationCompat
 import android.support.v7.widget.AppCompatEditText
 import android.support.v7.widget.Toolbar.OnMenuItemClickListener
 import android.text.InputFilter
@@ -21,7 +20,6 @@ import android.widget.ProgressBar
 import tk.mygod.CurrentApp
 import tk.mygod.app.ToolbarFragment
 import tk.mygod.speech.tts.OnTtsSynthesisCallbackListener
-import tk.mygod.text.{SsmlDroid, TextMappings}
 import tk.mygod.util.IOUtils
 import tk.mygod.util.MethodWrappers._
 
@@ -33,49 +31,24 @@ object MainFragment {
   val SAVE_TEXT = 1
   val SAVE_SYNTHESIS = 2
   val OPEN_EARCON = 3
-  val IDLE = 0
-  val SPEAKING = 1
-  val SYNTHESIZING = 2
   val noFilters = new Array[InputFilter](0)
   val readonlyFilters = Array[InputFilter](inputFilter((src, start, end, dest, dstart, dend) =>
     dest.subSequence(dstart, dend)))
 }
 
 final class MainFragment extends ToolbarFragment
-  with OnTtsSynthesisCallbackListener with OnSelectedEngineChangingListener with OnMenuItemClickListener {
+  with OnTtsSynthesisCallbackListener with OnMenuItemClickListener {
+  private var mainActivity: MainActivity = _
   private var progressBar: ProgressBar = _
   var inputText: AppCompatEditText = _
   private var menu: Menu = _
-  private var styleItem: MenuItem = _
+  var styleItem: MenuItem = _
   private var earconItem: MenuItem = _
   private var fab: FloatingActionButton = _
-  var status: Int = _
   private var selectionStart: Int = _
   private var selectionEnd: Int = _
-  private var inBackground: Boolean = _
-  private var mappings: TextMappings = _
-  private var descriptor: ParcelFileDescriptor = _
-  private var lastText: String = _
-  var displayName: String = _
-  private lazy val notificationManager =
-    getActivity.getSystemService(Context.NOTIFICATION_SERVICE).asInstanceOf[NotificationManager]
   private lazy val inputMethodManager =
     getActivity.getSystemService(Context.INPUT_METHOD_SERVICE).asInstanceOf[InputMethodManager]
-
-  private def showNotification(text: CharSequence) {
-    if (status != MainFragment.SPEAKING) lastText = null
-    else if (text != null) lastText = text.toString.replaceAll("\\s+", " ")
-    if (inBackground) notificationManager.notify(0, new NotificationCompat.BigTextStyle(TtsEngineManager.mainActivity
-      .builder.setWhen(System.currentTimeMillis).setContentText(lastText)
-      .setTicker(if (TtsEngineManager.pref.getBoolean("appearance.ticker", false)) lastText else null)
-      .setPriority(TtsEngineManager.pref.getString("appearance.notificationType", "0").toInt)
-      .setVibrate(new Array[Long](0))).bigText(lastText).build)
-  }
-
-  private def cancelNotification {
-    inBackground = false
-    notificationManager.cancel(0)
-  }
 
   private def formatDefaultText(pattern: String, buildTime: Date) = {
     val calendar = Calendar.getInstance
@@ -92,7 +65,14 @@ final class MainFragment extends ToolbarFragment
 
   override def onAttach(activity: Activity) {
     super.onAttach(activity)
-    activity.asInstanceOf[MainActivity].mainFragment = this
+    mainActivity = activity.asInstanceOf[MainActivity]
+    if (App.mainFragment != null) throw new RuntimeException("MainFragment is being attached twice!")
+    App.mainFragment = this
+  }
+  override def onDetach {
+    super.onDetach
+    mainActivity = null
+    App.mainFragment = null
   }
 
   override def onCreateView(inflater: LayoutInflater, container: ViewGroup, savedInstanceState: Bundle) = {
@@ -101,28 +81,23 @@ final class MainFragment extends ToolbarFragment
     toolbar.inflateMenu(R.menu.main_activity_actions)
     menu = toolbar.getMenu
     styleItem = menu.findItem(R.id.action_style)
+    styleItem.setVisible(App.enableSsmlDroid)
     toolbar.setOnMenuItemClickListener(this)
     progressBar = result.findViewById(R.id.progressBar).asInstanceOf[ProgressBar]
     fab = result.findViewById(R.id.fab).asInstanceOf[FloatingActionButton]
-    fab.setOnClickListener((v: View) => if (status == MainFragment.IDLE) {
-      try {
-        status = MainFragment.SPEAKING
-        val text = getText
-        startSynthesis
-        TtsEngineManager.engines.selectedEngine.setSynthesisCallbackListener(this)
-        TtsEngineManager.engines.selectedEngine.speak(text, getStartOffset)
-      } catch {
-        case e: Exception =>
-          e.printStackTrace
-          showToast(String.format(R.string.synthesis_error, e.getLocalizedMessage))
-          stopSynthesis
-      }
-    } else stopSynthesis)
+    fab.setOnClickListener((v: View) => SynthesisService.write(
+      if (SynthesisService.instance.status == SynthesisService.IDLE) {
+        try SynthesisService.instance.speak(getText, getStartOffset) catch {
+          case e: Exception =>
+            e.printStackTrace
+            showToast(String.format(R.string.synthesis_error, e.getLocalizedMessage))
+            SynthesisService.instance.stop
+        }
+      } else SynthesisService.instance.stop))
     val buildTime = CurrentApp.getBuildTime(getActivity)
     inputText = result.findViewById(R.id.input_text).asInstanceOf[AppCompatEditText]
-    TtsEngineManager.init(getActivity.asInstanceOf[MainActivity], this)
     var failed = true
-    if (TtsEngineManager.enableSsmlDroid) try {
+    if (App.enableSsmlDroid) try {
       inputText.setText(formatDefaultText(IOUtils.readAllText(getResources.openRawResource(R.raw.input_text_default)),
         buildTime))
       failed = false
@@ -130,9 +105,21 @@ final class MainFragment extends ToolbarFragment
       case e: IOException => e.printStackTrace
     }
     if (failed) inputText.setText(formatDefaultText(R.string.input_text_default, buildTime))
-    val intent = TtsEngineManager.mainActivity.getIntent
-    if (intent != null) TtsEngineManager.mainActivity.onNewIntent(intent)
+    val intent = mainActivity.getIntent
+    if (intent != null) mainActivity.onNewIntent(intent)
     result
+  }
+
+  override def onViewStateRestored(savedInstanceState: Bundle) {
+    super.onViewStateRestored(savedInstanceState)
+    // update the user interface while the activity is dead
+    if (!SynthesisService.ready || SynthesisService.instance.status == SynthesisService.IDLE) onTtsSynthesisFinished
+    else onTtsSynthesisStarting(SynthesisService.instance.currentText.length)
+    if (SynthesisService.ready) {
+      if (SynthesisService.instance.prepared >= 0) onTtsSynthesisPrepared(SynthesisService.instance.prepared)
+      if (SynthesisService.instance.currentStart >= 0)
+        onTtsSynthesisCallback(SynthesisService.instance.currentStart, SynthesisService.instance.currentEnd)
+    }
   }
 
   override def onCreateContextMenu(menu: ContextMenu, v: View, menuInfo: ContextMenu.ContextMenuInfo) {
@@ -314,22 +301,8 @@ final class MainFragment extends ToolbarFragment
     true
   }
 
-  override def onStop {
-    if (status != MainFragment.IDLE) {
-      inBackground = true
-      showNotification(null)
-    }
-    super.onStop
-  }
-
-  override def onStart {
-    super.onStart
-    cancelNotification
-    styleItem.setVisible(TtsEngineManager.enableSsmlDroid)
-  }
-
   def onMenuItemClick(item: MenuItem) = {
-    val ssml = TtsEngineManager.enableSsmlDroid
+    val ssml = App.enableSsmlDroid
     val mime = if (ssml) "application/ssml+xml" else "text/plain"
     item.getItemId match {
       case R.id.action_style =>
@@ -340,9 +313,11 @@ final class MainFragment extends ToolbarFragment
         unregisterForContextMenu(inputText)
         true
       case R.id.action_synthesize_to_file =>
-        TtsEngineManager.mainActivity.showSave(TtsEngineManager.engines.selectedEngine.getMimeType, getSaveFileName +
-          '.' + MimeTypeMap.getSingleton.getExtensionFromMimeType(TtsEngineManager.engines.selectedEngine.getMimeType),
-          MainFragment.SAVE_SYNTHESIS)
+        SynthesisService.read {
+          val mime = SynthesisService.instance.engines.selectedEngine.getMimeType
+          runOnUiThread(mainActivity.showSave(mime, App.getSaveFileName + '.' +
+            MimeTypeMap.getSingleton.getExtensionFromMimeType(mime), MainFragment.SAVE_SYNTHESIS))
+        }
         true
       case R.id.action_open =>
         try startActivityForResult(new Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE)
@@ -353,174 +328,109 @@ final class MainFragment extends ToolbarFragment
         true
       case R.id.action_save =>
         val extension = if (ssml) ".ssml" else ".txt"
-        var fileName = getSaveFileName
+        var fileName = App.getSaveFileName
         if (!fileName.toLowerCase.endsWith(extension)) fileName += extension
-        TtsEngineManager.mainActivity.showSave(mime, fileName, MainFragment.SAVE_TEXT)
+        mainActivity.showSave(mime, fileName, MainFragment.SAVE_TEXT)
         true
       case R.id.action_settings =>
-        TtsEngineManager.mainActivity.showSettings
+        mainActivity.showSettings
         true
       case _ => false
     }
   }
 
-  private def startSynthesis {
-    TtsEngineManager.engines.selectedEngine.setPitch(TtsEngineManager.pref.getString("tweaks.pitch", "1").toFloat)
-    TtsEngineManager.engines.selectedEngine
-      .setSpeechRate(TtsEngineManager.pref.getString("tweaks.speechRate", "1").toFloat)
-    TtsEngineManager.engines.selectedEngine.setPan(TtsEngineManager.pref.getString("tweaks.pan", "0").toFloat)
-    fab.setImageDrawable(R.drawable.ic_av_mic)
-    menu.setGroupEnabled(R.id.disabled_when_synthesizing, false)
-    inputText.setFilters(MainFragment.readonlyFilters)
-    inputMethodManager.hideSoftInputFromWindow(inputText.getWindowToken, InputMethodManager.HIDE_NOT_ALWAYS)
-    TtsEngineManager.mainActivity.builder.setProgress(0, 0, true)
-    progressBar.setIndeterminate(true)
-    progressBar.setVisibility(View.VISIBLE)
-    progressBar.setMax(inputText.getText.length)
-  }
-
-  def stopSynthesis {
-    TtsEngineManager.engines.selectedEngine.stop
-    fab.setImageDrawable(R.drawable.ic_av_mic_none)
-    menu.setGroupEnabled(R.id.disabled_when_synthesizing, true)
-    inputText.setFilters(MainFragment.noFilters)
-    progressBar.setVisibility(View.INVISIBLE)
-    if (descriptor != null) descriptor = null
-    status = MainFragment.IDLE
-    cancelNotification
-  }
-
-  def onSelectedEngineChanging {
-    stopSynthesis
-  }
-
   private def getStartOffset = {
-    val start = TtsEngineManager.pref.getString("text.start", "beginning")
+    val start = App.pref.getString("text.start", "beginning")
     if ("selection_start" == start) inputText.getSelectionStart
     else if ("selection_end" == start) inputText.getSelectionEnd else 0
   }
 
-  private def getSaveFileName = if (displayName == null)
-    new SimpleDateFormat("yyyyMMddHHmmssSSS").format(new Date) else displayName
-
   private def getText = {
-    var text = inputText.getText.toString
+    val text = inputText.getText.toString
     val temp = text.replaceAll("\r", "")
-    if (text != temp) {
+    if (text == temp) text else {
       inputText.setText(temp)
-      text = inputText.getText.toString // get again to keep in sync
-    }
-    if (TtsEngineManager.enableSsmlDroid) {
-      val parser: SsmlDroid.Parser = SsmlDroid.fromSsml(text, TtsEngineManager.ignoreSingleLineBreak, null)
-      mappings = parser.Mappings
-      parser.Result
-    } else {
-      mappings = null
-      if (TtsEngineManager.ignoreSingleLineBreak) text.replaceAll("(?<!\\n)(\\n)(?!\\n)", " ") else text
+      inputText.getText.toString  // get again to keep in sync
     }
   }
 
-  def save(uri: Uri, requestCode: Int) {
-    requestCode match {
-      case MainFragment.SAVE_TEXT =>
-        var output: OutputStream = null
-        try {
-          output = getActivity.getContentResolver.openOutputStream(uri)
-          output.write(inputText.getText.toString.getBytes)
-        } catch {
-          case e: IOException =>
-            e.printStackTrace
-            showToast(String.format(R.string.save_error, e.getMessage))
-        } finally if (output != null) try output.close catch {
-          case e: IOException => e.printStackTrace
-        }
-      case MainFragment.SAVE_SYNTHESIS =>
-        try {
-          status = MainFragment.SYNTHESIZING
-          val text = getText
-          startSynthesis
-          TtsEngineManager.engines.selectedEngine.setSynthesisCallbackListener(this)
-          descriptor = getActivity.getContentResolver.openFileDescriptor(uri, "w")
-          TtsEngineManager.engines.selectedEngine.synthesizeToStream(text, getStartOffset,
-            new FileOutputStream(descriptor.getFileDescriptor), getActivity.getCacheDir)
-        } catch {
-          case e: Exception =>
-            e.printStackTrace
-            showToast(String.format(R.string.synthesis_error, e.getMessage))
-            stopSynthesis
-        }
-    }
+  def save(uri: Uri, requestCode: Int) = requestCode match {
+    case MainFragment.SAVE_TEXT =>
+      var output: OutputStream = null
+      try {
+        output = getActivity.getContentResolver.openOutputStream(uri)
+        output.write(inputText.getText.toString.getBytes)
+      } catch {
+        case e: IOException =>
+          e.printStackTrace
+          showToast(String.format(R.string.save_error, e.getMessage))
+      } finally if (output != null) try output.close catch {
+        case e: IOException => e.printStackTrace
+      }
+    case MainFragment.SAVE_SYNTHESIS =>
+      SynthesisService.write(SynthesisService.instance.synthesizeToUri(getText, getStartOffset, uri), {
+        case e: Exception =>
+          e.printStackTrace
+          showToast(String.format(R.string.synthesis_error, e.getMessage))
+          SynthesisService.instance.stop
+      })
   }
-  protected override def onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
-    requestCode match {
-      case MainFragment.OPEN_TEXT =>
-        if (resultCode == Activity.RESULT_OK) TtsEngineManager.mainActivity.onNewIntent(data)
-      case MainFragment.SAVE_TEXT | MainFragment.SAVE_SYNTHESIS =>
-        if (resultCode == Activity.RESULT_OK) save(data.getData, requestCode)
-      case MainFragment.OPEN_EARCON => if (resultCode == Activity.RESULT_OK) {
-        val uri = data.getData
-        if (Build.VERSION.SDK_INT >= 19)
-          try getActivity.getContentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-          catch {
-            case ignore: Exception =>
-          }
-        processTag(earconItem, inputText.getText, uri.toString)
-      } else processTag(earconItem, inputText.getText, "")
-      case _ => super.onActivityResult(requestCode, resultCode, data)
-    }
+  protected override def onActivityResult(requestCode: Int, resultCode: Int, data: Intent) = requestCode match {
+    case MainFragment.OPEN_TEXT =>
+      if (resultCode == Activity.RESULT_OK) mainActivity.onNewIntent(data)
+    case MainFragment.SAVE_TEXT | MainFragment.SAVE_SYNTHESIS =>
+      if (resultCode == Activity.RESULT_OK) save(data.getData, requestCode)
+    case MainFragment.OPEN_EARCON => if (resultCode == Activity.RESULT_OK) {
+      val uri = data.getData
+      if (Build.VERSION.SDK_INT >= 19)
+        try getActivity.getContentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        catch {
+          case ignore: Exception =>
+        }
+      processTag(earconItem, inputText.getText, uri.toString)
+    } else processTag(earconItem, inputText.getText, "")
+    case _ => super.onActivityResult(requestCode, resultCode, data)
   }
 
-  def onTtsSynthesisPrepared(e: Int) {
-    val end = if (mappings == null) e else mappings.getSourceOffset(e, true)
+  def onTtsSynthesisStarting(length: Int) = runOnUiThread {
+    fab.setImageDrawable(R.drawable.ic_av_mic)
+    menu.setGroupEnabled(R.id.disabled_when_synthesizing, false)
+    inputText.setFilters(MainFragment.readonlyFilters)
+    inputMethodManager.hideSoftInputFromWindow(inputText.getWindowToken, InputMethodManager.HIDE_NOT_ALWAYS)
+    progressBar.setIndeterminate(true)
+    progressBar.setVisibility(View.VISIBLE)
+    progressBar.setMax(length)
+  }
+  def onTtsSynthesisPrepared(end: Int) = runOnUiThread {
+    if (progressBar.isIndeterminate) {
+      progressBar.setIndeterminate(false)
+      progressBar.setProgress(0)
+    }
+    progressBar.setSecondaryProgress(end)
+  }
+  def onTtsSynthesisCallback(s: Int, e: Int) = {
+    var start = s
+    var end = e
+    if (SynthesisService.instance.mappings != null) {
+      start = SynthesisService.instance.mappings.getSourceOffset(start, false)
+      end = SynthesisService.instance.mappings.getSourceOffset(end, true)
+    }
+    if (end < start) end = start
     runOnUiThread {
       if (progressBar.isIndeterminate) {
         progressBar.setIndeterminate(false)
-        progressBar.setProgress(0)
+        progressBar.setSecondaryProgress(0)
       }
-      progressBar.setSecondaryProgress(end)
-    }
-  }
-
-  def onTtsSynthesisCallback(s: Int, e: Int) {
-    var start = s
-    var end = e
-    if (mappings != null) {
-      start = mappings.getSourceOffset(start, false)
-      end = mappings.getSourceOffset(end, true)
-    }
-    if (end < start) end = start
-    runOnUiThread {
-      if (status != MainFragment.IDLE) {
-        if (progressBar.isIndeterminate) {
-          progressBar.setIndeterminate(false)
-          progressBar.setSecondaryProgress(0)
-        }
-        progressBar.setProgress(start)
-      }
-      TtsEngineManager.mainActivity.builder.setProgress(progressBar.getMax, start, false)
+      progressBar.setProgress(s)
       inputText.setSelection(start, end)
       inputText.moveCursorToVisibleOffset
-      showNotification(inputText.getText.subSequence(start, end))
     }
   }
-
-  def onTtsSynthesisError(s: Int, e: Int) {
-    var start = s
-    var end = e
-    if (mappings != null) {
-      start = mappings.getSourceOffset(start, false)
-      end = mappings.getSourceOffset(end, true)
-    }
-    if (end < start) end = start
-    runOnUiThread(if (start < end)
-      showToast(String.format(R.string.synthesis_error, inputText.getText.toString.substring(start, end))))
-  }
-
-  def onTtsSynthesisFinished = runOnUiThread(stopSynthesis)
-
-  override def onDestroy {
-    stopSynthesis
-    TtsEngineManager.destroy
-    super.onDestroy
+  def onTtsSynthesisError(start: Int, end: Int) = ()
+  def onTtsSynthesisFinished = runOnUiThread {
+    fab.setImageDrawable(R.drawable.ic_av_mic_none)
+    menu.setGroupEnabled(R.id.disabled_when_synthesizing, true)
+    inputText.setFilters(MainFragment.noFilters)
+    progressBar.setVisibility(View.INVISIBLE)
   }
 }

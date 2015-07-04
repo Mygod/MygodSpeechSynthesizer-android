@@ -6,7 +6,6 @@ import android.content.{Context, Intent, BroadcastReceiver}
  * @author Mygod
  */
 final class NotificationHandler extends BroadcastReceiver {
-  def onReceive(context: Context, intent: Intent) =
-    if (TtsEngineManager.mainActivity != null && ("tk.mygod.speech.synthesizer.action.STOP" == intent.getAction))
-      TtsEngineManager.mainActivity.mainFragment.stopSynthesis
+  def onReceive(context: Context, intent: Intent) = if (intent.getAction == SynthesisService.STOP)
+    context.startService(new Intent(context, classOf[SynthesisService]).putExtra("stop", true))
 }

@@ -6,10 +6,10 @@ import android.text.Spanned
 import tk.mygod.text.EarconSpan
 
 object SpeechSplitter {
-  private val BEST_SPLITTERS_EVER = 0
-  private val SPACE_FOR_THE_BEST = 1
-  private val NOT_SPLITTER = 6
-  private val splitters = Array("!。？！…", ".?", ":;：；—", ",()[]{}，（）【】『』［］｛｝、",
+  private final val BEST_SPLITTERS_EVER = 0
+  private final val SPACE_FOR_THE_BEST = 1
+  private final val NOT_SPLITTER = 6
+  private final val splitters = Array("!。？！…", ".?", ":;：；—", ",()[]{}，（）【】『』［］｛｝、",
     "'\"‘’“”＇＂<>＜＞《》", " \t\b\n\r\f\r\u000b\u001c\u001d\u001e\u001f\u00a0\u2028\u2029/\\|-／＼｜－")
     .zipWithIndex.flatMap { case (s, i) => s.toCharArray.map(c => (c, i)) }.toMap
 }

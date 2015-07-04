@@ -57,6 +57,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
   @TargetApi(Build.VERSION_CODES.LOLLIPOP)
   private def wrap(voice: Voice) = if (voice == null) null else new VoiceWrapper(voice)
 
+  //noinspection ScalaDeprecation
   final class LocaleVoice(loc: Locale) extends LocaleWrapper(loc) {
     override def getFeatures = {
       val features = tts.getFeatures(locale)
@@ -83,6 +84,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
           }
           val cs = currentText.subSequence(part.start, part.end)
           val id = part.toString
+          //noinspection ScalaDeprecation
           if (part.isEarcon) {
             val uri = cs.toString
             tts.synchronized {
@@ -105,6 +107,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
           e.printStackTrace
           if (listener != null) listener.onTtsSynthesisError(0, currentText.length)
       }
+      //noinspection ScalaDeprecation
       if (Build.VERSION.SDK_INT >= 21) tts.speak("", TextToSpeech.QUEUE_ADD, getParamsL(""), "")
       else tts.speak("", TextToSpeech.QUEUE_ADD, getParams("")) // stop sign
       null
@@ -116,15 +119,17 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
     val mergeQueue = new LinkedBlockingDeque[SpeechPart]
     val synthesizeLock = new Semaphore(1)
 
-    private def merge {
-      try {
+    protected def doInBackground(params: AnyRef*): AnyRef = {
+      output = params(0).asInstanceOf[FileOutputStream]
+      val cacheDir = params(1).asInstanceOf[File]
+      Future(try {
         var header: Array[Byte] = null
-        var length: Long = 0
+        var length = 0L
         var part = mergeQueue.take
         while (part.start >= 0) {
           var input: InputStream = null
           try {
-            if (isCancelled) return
+            if (isCancelled) return null
             if (listener != null) listener.onTtsSynthesisCallback(part.start, part.end)
             input = if (part.isEarcon)
               context.getContentResolver.openInputStream(currentText.subSequence(part.start, part.end))
@@ -171,16 +176,9 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
         }
         if (listener != null) listener.onTtsSynthesisFinished
         synthesizeToStreamTask = null
-      }
-    }
-
-    protected def doInBackground(params: AnyRef*): AnyRef = {
-      var future: Future[Unit] = null
+      })
       try {
-        output = params(0).asInstanceOf[FileOutputStream]
-        val cacheDir = params(1).asInstanceOf[File]
         if (isCancelled) return null
-        future = Future(merge)
         for (part <- new SpeechSplitter(currentText, startOffset, getMaxLength)) {
           if (isCancelled) return null
           if (!part.isEarcon) try {
@@ -188,6 +186,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
             synthesizeLock.acquireUninterruptibly
             val cs = currentText.subSequence(part.start, part.end)
             val id = part.toString
+            //noinspection ScalaDeprecation
             if (Build.VERSION.SDK_INT >= 21) tts.synthesizeToFile(cs, getParamsL(id), part.file, id)
             else tts.synthesizeToFile(cs.toString, getParams(id), part.file.getAbsolutePath)
             synthesizeLock.acquireUninterruptibly
@@ -203,7 +202,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
         case e: Exception =>
           e.printStackTrace
           if (listener != null) listener.onTtsSynthesisError(0, currentText.length)
-      } finally if (future != null) mergeQueue.add(new SpeechPart)  // stop sign
+      } finally mergeQueue.add(new SpeechPart)  // stop sign
       null
     }
   }
@@ -263,13 +262,13 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
     Future {
       initVoices
       initLock.release
+      //noinspection ScalaDeprecation
       if (preInitSetVoice != null) setVoice(preInitSetVoice)
       else if (useNativeVoice) {
         val voice: Voice = tts.getDefaultVoice
         if (voice != null) tts.setVoice(voice)
-      }
-      else setVoice(new LocaleVoice(if (Build.VERSION.SDK_INT >= 18) tts.getDefaultLanguage
-        else context.getResources.getConfiguration.locale))
+      } else setVoice(new LocaleVoice(if (Build.VERSION.SDK_INT >= 18) tts.getDefaultLanguage
+      else context.getResources.getConfiguration.locale))
     }
   }
 
@@ -288,6 +287,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
                    catch { case ignore: Exception => false })
       .map(l => {
         tts.setLanguage(l)
+        //noinspection ScalaDeprecation
         new LocaleVoice(tts.getLanguage).asInstanceOf[TtsVoice]
       }).to[immutable.SortedSet]
     catch {
@@ -296,15 +296,19 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
     }
   }
 
-  def getVoices = {
+  private def waitForInit = {
     initLock.acquireUninterruptibly
     initLock.release
+  }
+
+  def getVoices = {
+    waitForInit
     voices
   }
 
   def getVoice = {
-    initLock.acquireUninterruptibly
-    initLock.release
+    waitForInit
+    //noinspection ScalaDeprecation
     if (useNativeVoice) wrap(tts.getVoice) else new LocaleVoice(tts.getLanguage)
   }
 
