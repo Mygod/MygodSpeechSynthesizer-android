@@ -78,7 +78,7 @@ final class MainFragment extends ToolbarFragment
   override def onCreateView(inflater: LayoutInflater, container: ViewGroup, savedInstanceState: Bundle) = {
     val result = inflater.inflate(R.layout.fragment_main, container, false)
     configureToolbar(result, R.string.app_name)
-    toolbar.inflateMenu(R.menu.main_activity_actions)
+    toolbar.inflateMenu(R.menu.main_fragment_actions)
     menu = toolbar.getMenu
     styleItem = menu.findItem(R.id.action_style)
     styleItem.setVisible(App.enableSsmlDroid)
