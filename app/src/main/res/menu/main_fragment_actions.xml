@@ -4,7 +4,8 @@
       xmlns:app="http://schemas.android.com/apk/res-auto" tools:context="tk.mygod.speech.synthesizer.MainActivity">
     <group android:id="@+id/disabled_when_synthesizing">
         <item android:id="@+id/action_style" android:title="@string/action_style" app:showAsAction="always|withText"
-              android:icon="@drawable/ic_image_style" android:alphabeticShortcut="t" android:numericShortcut="0" />
+              android:icon="@drawable/ic_image_style" android:alphabeticShortcut="t" android:numericShortcut="0"
+              tools:ignore="AlwaysShowAction"/>
         <item android:id="@+id/action_synthesize_to_file" android:title="@string/action_synthesize_to_file"
               app:showAsAction="never" android:alphabeticShortcut="f" android:numericShortcut="1"/>
         <item android:id="@+id/action_open" android:title="@string/action_open"
