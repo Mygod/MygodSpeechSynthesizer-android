@@ -9,7 +9,7 @@ import android.app.Activity
 import android.content._
 import android.net.{ParseException, Uri}
 import android.os.{Build, Bundle}
-import android.support.design.widget.{Snackbar, CoordinatorLayout, FloatingActionButton}
+import android.support.design.widget.{FloatingActionButton, Snackbar}
 import android.support.v7.widget.AppCompatEditText
 import android.support.v7.widget.Toolbar.OnMenuItemClickListener
 import android.text.InputFilter
