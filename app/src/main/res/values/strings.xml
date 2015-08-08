@@ -18,7 +18,7 @@
     <string name="synthesis_error">Synthesis failed: %s</string>
     <string name="error_synthesis_in_progress">Synthesis in progress, please wait or stop current synthesis first.
     </string>
-    <string name="google_translate_tts_engine_name">Google Translate TTS Engine (Online)</string>
+    <string name="google_translate_tts_engine_name">Google Translate TTS Engine</string>
     <string name="notification_title">Synthesizing (swipe to stop)</string>
 
     <string name="settings">Settings</string>
