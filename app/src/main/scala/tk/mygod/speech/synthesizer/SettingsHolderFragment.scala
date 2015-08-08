@@ -1,12 +1,13 @@
 package tk.mygod.speech.synthesizer
 
+import java.text.DecimalFormat
+
 import android.content.Intent
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.preference.{Preference, PreferenceFragment}
-import android.speech.tts.Voice
 import android.text.style.TextAppearanceSpan
-import android.text.{TextUtils, SpannableStringBuilder, Spanned}
+import android.text.{SpannableStringBuilder, Spanned, TextUtils}
 import tk.mygod.app.FragmentPlus
 import tk.mygod.concurrent.FailureHandler
 import tk.mygod.preference.IconListPreference
@@ -91,8 +92,10 @@ class SettingsHolderFragment extends PreferenceFragment with FragmentPlus {
           val builder = new SpannableStringBuilder
           builder.append(voice.getDisplayName)
           val start = builder.length
+          val df = new DecimalFormat("0.#")
           if (!voice.isInstanceOf[LocaleWrapper]) builder.append(String.format(R.string.settings_voice_information,
-            voice.getLocale.getDisplayName, qualityFormat(voice.getQuality), latencyFormat(voice.getLatency)))
+            voice.getLocale.getDisplayName, String.format(R.string.settings_quality, df.format(voice.getQuality / 5D)),
+            String.format(R.string.settings_latency, df.format(voice.getLatency / 5D))))
           var unsupportedFeatures: CharSequence = ""
           for (feature <- features) feature match {
             case ConstantsWrapper.KEY_FEATURE_EMBEDDED_SYNTHESIS | ConstantsWrapper.KEY_FEATURE_NETWORK_SYNTHESIS |
@@ -126,24 +129,5 @@ class SettingsHolderFragment extends PreferenceFragment with FragmentPlus {
         voice.init
       }
     } onFailure FailureHandler
-  }
-
-  private def latencyFormat(latency: Int) = latency match {
-    case Voice.LATENCY_VERY_LOW => getText(R.string.settings_latency_very_low)
-    case Voice.LATENCY_LOW => getText(R.string.settings_latency_low)
-    case Voice.LATENCY_NORMAL => getText(R.string.settings_latency_normal)
-    case Voice.LATENCY_HIGH => getText(R.string.settings_latency_high)
-    case Voice.LATENCY_VERY_HIGH => getText(R.string.settings_latency_very_high)
-    case _ => String.format(R.string.settings_latency, latency: Integer)
-  }
-
-  private def qualityFormat(quality: Int) = quality match {
-    case Voice.QUALITY_VERY_LOW => getText(R.string.settings_quality_very_low)
-    case Voice.QUALITY_LOW => getText(R.string.settings_quality_low)
-    case Voice.QUALITY_NORMAL => getText(R.string.settings_quality_normal)
-    case ConstantsWrapper.QUALITY_ABOVE_NORMAL => getText(R.string.settings_quality_above_normal)
-    case Voice.QUALITY_HIGH => getText(R.string.settings_quality_high)
-    case Voice.QUALITY_VERY_HIGH => getText(R.string.settings_quality_very_high)
-    case _ => String.format(R.string.settings_quality, quality: Integer)
   }
 }
