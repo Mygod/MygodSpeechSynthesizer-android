@@ -42,8 +42,7 @@ object SsmlDroid {
   }
 
   class Parser(private val source: String, private val customHandler: SsmlDroid.TagHandler,
-               private val reader: XMLReader, private val ignoreSingleLineBreaks: Boolean)
-    extends DefaultHandler {
+               private val reader: XMLReader, private val ignoreSingleLineBreaks: Boolean) extends DefaultHandler {
     private val treeStack = new mutable.Stack[SsmlDroid.Tag]
     private var locator: Locator = null
     private var theCurrentLine: Field = null
@@ -87,8 +86,7 @@ object SsmlDroid {
         temp = attributes.getValue("number")
         if (temp == null) throw new AttributeMissingException(name + "/@number")
         bundle.putString(TtsSpan.ARG_NUMBER, temp)
-      }
-      else if ("date" == name) {
+      } else if ("date" == name) {
         temp = attributes.getValue("month")
         val month = temp != null
         if (month) bundle.putInt(TtsSpan.ARG_MONTH, Parser.parseInt(temp, Parser.months, 1, 0))
@@ -102,8 +100,7 @@ object SsmlDroid {
         temp = attributes.getValue("weekday")
         if (temp != null) bundle.putInt(TtsSpan.ARG_WEEKDAY, Parser.parseInt(temp, Parser.weekdays, 0, 1))
         else if (!day) throw new AttributeMissingException("date/@day | @weekday")
-      }
-      else if (("decimal" == name) || ("money" == name)) {
+      } else if (("decimal" == name) || ("money" == name)) {
         temp = attributes.getValue("integer_part")
         if (temp == null) throw new AttributeMissingException(name + "/@integer_part")
         bundle.putString(TtsSpan.ARG_INTEGER_PART, temp)
@@ -115,12 +112,10 @@ object SsmlDroid {
         else if ("money" == name) throw new AttributeMissingException("money/@fractional_part")
         temp = attributes.getValue("quantity")
         if (temp != null) bundle.putString(TtsSpan.ARG_QUANTITY, temp)
-      }
-      else if ("digits" == name) {
+      } else if ("digits" == name) {
         temp = attributes.getValue("digits")
         if (temp != null) bundle.putString(TtsSpan.ARG_DIGITS, temp)
-      }
-      else if ("electronic" == name) {
+      } else if ("electronic" == name) {
         var notSet = true
         temp = attributes.getValue("protocol")
         if (temp != null) {
@@ -164,8 +159,7 @@ object SsmlDroid {
         }
         if (notSet) throw new AttributeMissingException("electronic/@protocol | @username | @password | @domain | " +
                                                         "@port | @path | @query_string | @fragment_id")
-      }
-      else if ("fraction" == name) {
+      } else if ("fraction" == name) {
         temp = attributes.getValue("numerator")
         if (temp == null) throw new AttributeMissingException("fraction/@numerator")
         bundle.putString(TtsSpan.ARG_NUMERATOR, temp)
@@ -174,8 +168,7 @@ object SsmlDroid {
         bundle.putString(TtsSpan.ARG_DENOMINATOR, temp)
         temp = attributes.getValue("integer_part")
         if (temp != null) bundle.putString(TtsSpan.ARG_INTEGER_PART, temp)
-      }
-      else if ("measure" == name) {
+      } else if ("measure" == name) {
         temp = attributes.getValue("number")
         if (temp == null) {
           temp = attributes.getValue("integer_part")
@@ -189,18 +182,15 @@ object SsmlDroid {
             temp = attributes.getValue("denominator")
             if (temp == null) throw new AttributeMissingException("measure/@denominator")
             bundle.putString(TtsSpan.ARG_DENOMINATOR, temp)
-          }
-          else {
+          } else {
             bundle.putString(TtsSpan.ARG_FRACTIONAL_PART, temp)
             if (!integer_part) throw new AttributeMissingException("measure/@integer_part")
           }
-        }
-        else bundle.putString(TtsSpan.ARG_NUMBER, temp)
+        } else bundle.putString(TtsSpan.ARG_NUMBER, temp)
         temp = attributes.getValue("unit")
         if (temp == null) throw new AttributeMissingException("measure/@unit")
         bundle.putString(TtsSpan.ARG_UNIT, temp)
-      }
-      else if ("telephone" == name) {
+      } else if ("telephone" == name) {
         temp = attributes.getValue("number_parts")
         if (temp == null) throw new AttributeMissingException("telephone/@number_parts")
         bundle.putString(TtsSpan.ARG_NUMBER_PARTS, temp)
@@ -208,25 +198,21 @@ object SsmlDroid {
         if (temp != null) bundle.putString(TtsSpan.ARG_COUNTRY_CODE, temp)
         temp = attributes.getValue("extension")
         if (temp != null) bundle.putString(TtsSpan.ARG_EXTENSION, temp)
-      }
-      else if ("text" == name) {
+      } else if ("text" == name) {
         temp = attributes.getValue("text")
         if (temp != null) bundle.putString(TtsSpan.ARG_TEXT, temp)
-      }
-      else if ("time" == name) {
+      } else if ("time" == name) {
         temp = attributes.getValue("hours")
         if (temp == null) throw new AttributeMissingException("time/@hours")
         bundle.putInt(TtsSpan.ARG_HOURS, Parser.parseInt(temp, null, 0, 0))
         temp = attributes.getValue("minutes")
         if (temp == null) throw new AttributeMissingException("time/@minutes")
         bundle.putInt(TtsSpan.ARG_MINUTES, Parser.parseInt(temp, null, 0, 0))
-      }
-      else if ("verbatim" == name) {
+      } else if ("verbatim" == name) {
         temp = attributes.getValue("verbatim")
         if (temp == null) throw new AttributeMissingException("verbatim/@verbatim")
         bundle.putString(TtsSpan.ARG_VERBATIM, temp)
-      }
-      else {
+      } else {
         treeStack.push(new SsmlDroid.Tag(name))
         return
       }
