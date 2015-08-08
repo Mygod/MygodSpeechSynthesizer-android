@@ -22,4 +22,10 @@ object ConstantsWrapper {
 
   val KEY_PARAM_PAN = apply("KEY_PARAM_PAN")
   val KEY_PARAM_UTTERANCE_ID = apply("KEY_PARAM_UTTERANCE_ID")
+
+  // Google Text-to-speech Engine
+  val KEY_FEATURE_LEGACY_SET_LANGUAGE_VOICE = "LegacySetLanguageVoice"
+  val KEY_FEATURE_SUPPORTS_VOICE_MORPHING = "SupportsVoiceMorphing"
+  val KEY_FEATURE_VOICE_MORPHING_TARGET = "VoiceMorphingTarget"
+  val QUALITY_ABOVE_NORMAL = 310
 }

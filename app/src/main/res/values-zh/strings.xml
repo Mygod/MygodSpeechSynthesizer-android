@@ -108,4 +108,5 @@
     <string name="url_ssmldroid_user_guidelines">
         https://github.com/Mygod/MygodSpeechSynthesizer/wiki/SsmlDroid%E2%84%A2-%E7%94%A8%E6%88%B7%E6%8C%87%E5%8D%97
     </string>
+    <string name="settings_quality_above_normal">比中等略高的语音合成质量</string>
 </resources>

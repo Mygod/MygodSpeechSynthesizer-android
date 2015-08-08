@@ -25,6 +25,8 @@
     <string name="settings_engines_languages">Engines &amp; Languages</string>
     <string name="settings_preferred_engine">Preferred engine</string>
     <string name="settings_voice">Voice</string>
+    <string name="settings_show_legacy_voices">Show legacy voices</string>
+    <string name="settings_show_legacy_voices_summary">Show voices that are designed for 4.x or lower versions.</string>
     <string name="settings_tweaks">Tweaks (engine might not support)</string>
     <string name="settings_pitch">Pitch (1 for normal)</string>
     <string name="settings_speech_rate">Speech rate (1 for normal)</string>
@@ -115,6 +117,7 @@
     <string name="settings_quality_very_low">Very low, but still intelligible quality of speech synthesis</string>
     <string name="settings_quality_low">Low, not human-like quality of speech synthesis</string>
     <string name="settings_quality_normal">Normal quality of speech synthesis</string>
+    <string name="settings_quality_above_normal">Slightly higher than the normal quality of speech synthesis</string>
     <string name="settings_quality_high">High, human-like quality of speech synthesis</string>
     <string name="settings_quality_very_high">Very high, almost human-indistinguishable quality of speech synthesis
     </string>

@@ -6,6 +6,9 @@
                                                 android:summary="%s"/>
         <tk.mygod.preference.IconListPreference android:key="engine.voice" android:title="@string/settings_voice"
                                                 android:persistent="false"/>
+        <SwitchPreference android:key="engine.showLegacyVoices"
+                          android:title="@string/settings_show_legacy_voices"
+                          android:summary="@string/settings_show_legacy_voices_summary"/>
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/settings_tweaks">
         <tk.mygod.preference.EditTextPlusPreference android:key="tweaks.pitch" android:defaultValue="1" app:summary="%s"

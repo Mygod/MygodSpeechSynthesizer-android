@@ -255,7 +255,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
       //noinspection ScalaDeprecation
       if (preInitSetVoice != null) setVoice(preInitSetVoice)
       else if (useNativeVoice) {
-        val voice: Voice = tts.getDefaultVoice
+        val voice = tts.getDefaultVoice
         if (voice != null) tts.setVoice(voice)
       } else setVoice(new LocaleVoice(if (Build.VERSION.SDK_INT >= 18) tts.getDefaultLanguage
       else context.getResources.getConfiguration.locale))

@@ -6,13 +6,14 @@ import android.os.Bundle
 import android.preference.{Preference, PreferenceFragment}
 import android.speech.tts.Voice
 import android.text.style.TextAppearanceSpan
-import android.text.{SpannableStringBuilder, Spanned}
+import android.text.{TextUtils, SpannableStringBuilder, Spanned}
 import tk.mygod.app.FragmentPlus
 import tk.mygod.concurrent.FailureHandler
 import tk.mygod.preference.IconListPreference
 import tk.mygod.speech.tts.{ConstantsWrapper, LocaleWrapper, TtsEngine}
 import tk.mygod.util.MethodWrappers._
 
+import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -30,7 +31,7 @@ class SettingsHolderFragment extends PreferenceFragment with FragmentPlus {
     engine = findPreference("engine").asInstanceOf[IconListPreference]
     engine.setOnPreferenceChangeListener((preference: Preference, newValue: Any) => {
       SynthesisService.instance.selectEngine(newValue.toString)
-      updateVoices
+      updateVoices()
       true
     })
     voice = findPreference("engine.voice").asInstanceOf[IconListPreference]
@@ -56,9 +57,13 @@ class SettingsHolderFragment extends PreferenceFragment with FragmentPlus {
         engine.setEntryIcons(icons)
         engine.setValue(SynthesisService.instance.engines.selectedEngine.getID)
         engine.init
-        updateVoices
+        updateVoices()
       }
     }
+    findPreference("engine.showLegacyVoices").setOnPreferenceChangeListener((preference: Preference, newValue: Any) => {
+      updateVoices(Some(newValue.asInstanceOf[Boolean]))
+      true
+    })
     findPreference("text.enableSsmlDroid").setOnPreferenceChangeListener((preference: Preference, newValue: Any) => {
       App.mainFragment.styleItem.setVisible(newValue.asInstanceOf[Boolean])
       true
@@ -69,7 +74,7 @@ class SettingsHolderFragment extends PreferenceFragment with FragmentPlus {
     })
   }
 
-  private def updateVoices {
+  private def updateVoices(legacy: Option[Boolean] = None) {
     voice.setEntries(null)
     voice.setEntryValues(null)
     voice.setValue(null)
@@ -77,42 +82,43 @@ class SettingsHolderFragment extends PreferenceFragment with FragmentPlus {
     Future {
       val voices = SynthesisService.instance.engines.selectedEngine.getVoices
       val count = voices.size
-      val names = new Array[CharSequence](count)
-      val ids = new Array[CharSequence](count)
-      var i = 0
+      val names = new ArrayBuffer[CharSequence](count)
+      val ids = new ArrayBuffer[CharSequence](count)
+      val showLegacy = legacy getOrElse App.pref.getBoolean("engine.showLegacyVoices", false)
       for (voice <- voices) {
-        val builder = new SpannableStringBuilder
-        builder.append(voice.getDisplayName)
-        val start = builder.length
         val features = voice.getFeatures
-        if (!voice.isInstanceOf[LocaleWrapper]) builder.append(String.format(R.string.settings_voice_information,
-          voice.getLocale.getDisplayName, qualityFormat(voice.getQuality), latencyFormat(voice.getLatency)))
-        var first = true
-        var notInstalled = false
-        for (feature <- features) if (ConstantsWrapper.KEY_FEATURE_NOT_INSTALLED == feature) notInstalled = true
-        else if (ConstantsWrapper.KEY_FEATURE_EMBEDDED_SYNTHESIS != feature &&
-          ConstantsWrapper.KEY_FEATURE_NETWORK_SYNTHESIS != feature &&
-          ConstantsWrapper.KEY_FEATURE_NETWORK_RETRIES_COUNT != feature &&
-          ConstantsWrapper.KEY_FEATURE_NETWORK_TIMEOUT_MS != feature) {
-          builder.append(if (first) {
-            first = false
-            getText(R.string.settings_voice_information_unsupported_features)
-          } else ", ")
-          builder.append(feature)
+        if (showLegacy || !features.contains(ConstantsWrapper.KEY_FEATURE_LEGACY_SET_LANGUAGE_VOICE)) {
+          val builder = new SpannableStringBuilder
+          builder.append(voice.getDisplayName)
+          val start = builder.length
+          if (!voice.isInstanceOf[LocaleWrapper]) builder.append(String.format(R.string.settings_voice_information,
+            voice.getLocale.getDisplayName, qualityFormat(voice.getQuality), latencyFormat(voice.getLatency)))
+          var unsupportedFeatures: CharSequence = ""
+          for (feature <- features) feature match {
+            case ConstantsWrapper.KEY_FEATURE_EMBEDDED_SYNTHESIS | ConstantsWrapper.KEY_FEATURE_NETWORK_SYNTHESIS |
+                 ConstantsWrapper.KEY_FEATURE_NETWORK_RETRIES_COUNT | ConstantsWrapper.KEY_FEATURE_NETWORK_TIMEOUT_MS |
+                 ConstantsWrapper.KEY_FEATURE_LEGACY_SET_LANGUAGE_VOICE => ;
+            case ConstantsWrapper.KEY_FEATURE_NOT_INSTALLED =>
+              builder.append(getText(R.string.settings_voice_information_not_installed))
+            case _ =>
+              if (TextUtils.isEmpty(unsupportedFeatures))
+                unsupportedFeatures = R.string.settings_voice_information_unsupported_features
+              else unsupportedFeatures += ", "
+              unsupportedFeatures += feature
+          }
+          if (voice.isNetworkConnectionRequired)
+            builder.append(getText(R.string.settings_voice_information_network_connection_required))
+          builder.append(unsupportedFeatures)
+          if (builder.length != start) builder.setSpan(new TextAppearanceSpan(getActivity,
+            android.R.style.TextAppearance_Small), start + 1, builder.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+          names.append(builder)
+          ids.append(voice.getName)
         }
-        if (notInstalled) builder.append(getText(R.string.settings_voice_information_not_installed))
-        if (voice.isNetworkConnectionRequired)
-          builder.append(getText(R.string.settings_voice_information_network_connection_required))
-        if (builder.length != start) builder.setSpan(new TextAppearanceSpan(getActivity,
-          android.R.style.TextAppearance_Small), start + 1, builder.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-        names(i) = builder
-        ids(i) = voice.getName
-        i += 1
       }
       val v = SynthesisService.instance.engines.selectedEngine.getVoice
       runOnUiThread {
-        voice.setEntries(names)
-        voice.setEntryValues(ids)
+        voice.setEntries(names.toArray)
+        voice.setEntryValues(ids.toArray)
         if (v != null) {
           voice.setValue(v.getName)
           voice.setSummary(v.getDisplayName)
@@ -135,6 +141,7 @@ class SettingsHolderFragment extends PreferenceFragment with FragmentPlus {
     case Voice.QUALITY_VERY_LOW => getText(R.string.settings_quality_very_low)
     case Voice.QUALITY_LOW => getText(R.string.settings_quality_low)
     case Voice.QUALITY_NORMAL => getText(R.string.settings_quality_normal)
+    case ConstantsWrapper.QUALITY_ABOVE_NORMAL => getText(R.string.settings_quality_above_normal)
     case Voice.QUALITY_HIGH => getText(R.string.settings_quality_high)
     case Voice.QUALITY_VERY_HIGH => getText(R.string.settings_quality_very_high)
     case _ => String.format(R.string.settings_quality, quality: Integer)
