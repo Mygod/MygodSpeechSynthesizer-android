@@ -238,7 +238,7 @@ object SsmlDroid {
       if (temp != null) bundle.putString(TtsSpan.ARG_MULTIPLICITY, "android." + temp)
       temp = attributes.getValue("case")
       if (temp != null) bundle.putString(TtsSpan.ARG_CASE, "android." + temp)
-      treeStack.push(new SsmlDroid.Tag(name, new TtsSpan("android.name." + name, bundle), Result.length))
+      treeStack.push(new SsmlDroid.Tag(name, new TtsSpan("android.type." + name, bundle), Result.length))
     }
 
     override def endElement(uri: String, localName: String, qName: String) {
