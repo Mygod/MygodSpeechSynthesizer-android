@@ -90,8 +90,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
           tts.synchronized(SvoxPicoTtsEngine.earcons.get(tts).asInstanceOf[util.HashMap[String, Uri]].put(uri, uri))
           if (Build.VERSION.SDK_INT >= 21) tts.playEarcon(uri, TextToSpeech.QUEUE_ADD, getParamsL(id), id)
           else tts.playEarcon(uri, TextToSpeech.QUEUE_ADD, getParams(id))
-        }
-        else if (Build.VERSION.SDK_INT >= 21) tts.speak(cs, TextToSpeech.QUEUE_ADD, getParamsL(id), id)
+        } else if (Build.VERSION.SDK_INT >= 21) tts.speak(cs, TextToSpeech.QUEUE_ADD, getParamsL(id), id)
         else tts.speak(cs.toString, TextToSpeech.QUEUE_ADD, getParams(id))
         if (listener != null) listener.onTtsSynthesisPrepared(part.end)
       } catch {
