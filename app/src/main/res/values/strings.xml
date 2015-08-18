@@ -28,8 +28,8 @@
     <string name="settings_show_legacy_voices">Show legacy voices</string>
     <string name="settings_show_legacy_voices_summary">Show voices that are designed for 4.x or lower versions.</string>
     <string name="settings_tweaks">Tweaks (engine might not support)</string>
-    <string name="settings_pitch">Pitch (1 for normal)</string>
-    <string name="settings_speech_rate">Speech rate (1 for normal)</string>
+    <string name="settings_pitch">Pitch (100 for normal)</string>
+    <string name="settings_speech_rate">Speech rate (100 for normal)</string>
     <string name="settings_pan">Pan (between [-1, 1]; 0 for normal)</string>
     <string name="settings_text">Text</string>
     <string name="settings_start_from">Start from</string>

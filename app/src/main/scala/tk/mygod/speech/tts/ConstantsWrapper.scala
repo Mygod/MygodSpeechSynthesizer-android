@@ -21,6 +21,8 @@ object ConstantsWrapper {
     if (Build.VERSION.SDK_INT >= 21) apply("KEY_FEATURE_NOT_INSTALLED") else "notInstalled"
 
   val KEY_PARAM_PAN = apply("KEY_PARAM_PAN")
+  val KEY_PARAM_PITCH = apply("KEY_PARAM_PITCH")
+  val KEY_PARAM_RATE = apply("KEY_PARAM_RATE")
   val KEY_PARAM_UTTERANCE_ID = apply("KEY_PARAM_UTTERANCE_ID")
 
   // Google Text-to-speech Engine

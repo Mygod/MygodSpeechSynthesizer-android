@@ -30,9 +30,9 @@ abstract class TtsEngine(protected var context: Context) {
 
   def getMimeType: String
 
-  def setPitch(value: Float) = ()
-  def setSpeechRate(value: Float) = ()
-  def setPan(value: Float) = ()
+  var pitch = 100
+  var speechRate = 100
+  var pan = 0F
 
   def speak(text: CharSequence, startOffset: Int)
   def synthesizeToStream(text: CharSequence, startOffset: Int, output: FileOutputStream, cacheDir: File)

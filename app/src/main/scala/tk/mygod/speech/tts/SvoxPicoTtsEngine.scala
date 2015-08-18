@@ -205,7 +205,6 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
   private var voices: immutable.SortedSet[TtsVoice] = _
   private var preInitSetVoice: String = _
   private var useNativeVoice = Build.VERSION.SDK_INT >= 21
-  private var pan: BoxedFloat = null
   private var speakTask: SpeakTask = null
   private var synthesizeToStreamTask: SynthesizeToStreamTask = null
 
@@ -353,10 +352,6 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
   def getMimeType = "audio/x-wav"
   def getMaxLength = if (Build.VERSION.SDK_INT >= 18) TextToSpeech.getMaxSpeechInputLength else 4000
 
-  override def setPitch(value: Float) = tts.setPitch(value)
-  override def setSpeechRate(value: Float) = tts.setSpeechRate(value)
-  override def setPan(value: Float) = pan = value
-
   @TargetApi(Build.VERSION_CODES.LOLLIPOP)
   private def getParamsL(id: String) = {
     val params = new Bundle
@@ -369,14 +364,18 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
         params.putInt(ConstantsWrapper.KEY_FEATURE_NETWORK_TIMEOUT_MS, 0x7fffffff)
     }
     params.putString(ConstantsWrapper.KEY_PARAM_UTTERANCE_ID, id)
-    if (pan != null) params.putFloat(ConstantsWrapper.KEY_PARAM_PAN, pan)
+    params.putInt(ConstantsWrapper.KEY_PARAM_RATE, speechRate)
+    params.putInt(ConstantsWrapper.KEY_PARAM_PITCH, pitch)
+    params.putFloat(ConstantsWrapper.KEY_PARAM_PAN, pan)
     params
   }
 
   private def getParams(id: String) = {
     val params = new util.HashMap[String, String]()
     params.put(ConstantsWrapper.KEY_PARAM_UTTERANCE_ID, id)
-    if (pan != null) params.put(ConstantsWrapper.KEY_PARAM_PAN, pan.toString)
+    tts.setSpeechRate(speechRate)
+    tts.setPitch(pitch)
+    params.put(ConstantsWrapper.KEY_PARAM_PAN, pan.toString)
     params
   }
 

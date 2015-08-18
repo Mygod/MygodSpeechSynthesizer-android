@@ -11,12 +11,12 @@
                           android:summary="@string/settings_show_legacy_voices_summary"/>
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/settings_tweaks">
-        <tk.mygod.preference.EditTextPlusPreference android:key="tweaks.pitch" android:defaultValue="1" app:summary="%s"
+        <tk.mygod.preference.NumberPickerPreference android:key="tweaks.pitch" android:defaultValue="100"
                                                     android:title="@string/settings_pitch"
-                                                    android:inputType="numberDecimal|numberSigned"/>
-        <tk.mygod.preference.EditTextPlusPreference android:key="tweaks.speechRate" android:defaultValue="1"
-                                                    app:summary="%s" android:title="@string/settings_speech_rate"
-                                                    android:inputType="numberDecimal|numberSigned"/>
+                                                    app:summary="%d" app:min="1"/>
+        <tk.mygod.preference.NumberPickerPreference android:key="tweaks.speechRate" android:defaultValue="100"
+                                                    android:title="@string/settings_speech_rate"
+                                                    app:summary="%d" app:min="1"/>
         <tk.mygod.preference.EditTextPlusPreference android:key="tweaks.pan" android:defaultValue="0" app:summary="%s"
                                                     android:title="@string/settings_pan"
                                                     android:inputType="numberDecimal|numberSigned"/>
