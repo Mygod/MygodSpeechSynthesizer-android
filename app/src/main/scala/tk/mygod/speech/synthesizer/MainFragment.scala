@@ -43,7 +43,6 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
   var inputText: AppCompatEditText = _
   private var menu: Menu = _
   var styleItem: MenuItem = _
-  private var earconItem: MenuItem = _
   private var fab: FloatingActionButton = _
   private var selectionStart: Int = _
   private var selectionEnd: Int = _
@@ -126,15 +125,15 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
     if (v != inputText) return
     getActivity.getMenuInflater.inflate(R.menu.input_text_styles, menu)
     menu.setHeaderTitle(R.string.action_style)
-    earconItem = menu.findItem(R.id.action_tts_earcon)
   }
 
-  private def processTag(item: MenuItem, source: CharSequence, selection: CharSequence): Boolean = {
+  private def processTag(id: Int, source: CharSequence, selection: CharSequence, value: CharSequence = null): Boolean =
+  {
     var tag: String = null
     var toast: String = null
     var position = 0
     var attribute = false
-    item.getGroupId | item.getItemId match {
+    id match {
       case R.id.action_tts_cardinal =>
         tag = "cardinal number=\"\""
         toast = R.string.action_tts_number_toast
@@ -255,16 +254,16 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
         tag = "verbatim verbatim=\"\""
         toast = R.string.action_tts_verbatim_toast
       case R.id.action_tts_generic_attributes_gender =>
-        tag = String.format(" gender=\"%s\"", item.getTitleCondensed)
+        tag = String.format(" gender=\"%s\"", value)
         attribute = true
       case R.id.action_tts_generic_attributes_animacy =>
-        tag = String.format(" animacy=\"%s\"", item.getTitleCondensed)
+        tag = String.format(" animacy=\"%s\"", value)
         attribute = true
       case R.id.action_tts_generic_attributes_multiplicity =>
-        tag = String.format(" multiplicity=\"%s\"", item.getTitleCondensed)
+        tag = String.format(" multiplicity=\"%s\"", value)
         attribute = true
       case R.id.action_tts_generic_attributes_case =>
-        tag = String.format(" case=\"%s\"", item.getTitleCondensed)
+        tag = String.format(" case=\"%s\"", value)
         attribute = true
       case R.id.action_tts_earcon =>
         tag = "earcon"
@@ -297,7 +296,8 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
       intent.addCategory(Intent.CATEGORY_OPENABLE)
       intent.setType("audio/*")
       startActivityForResult(intent, MainFragment.OPEN_EARCON)
-    } else if (processTag(item, source, selection)) return super.onContextItemSelected(item)
+    } else if (processTag(item.getItemId | item.getGroupId, item.getTitleCondensed, source, selection))
+      return super.onContextItemSelected(item)
     true
   }
 
@@ -387,8 +387,8 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
         catch {
           case ignore: Exception =>
         }
-      processTag(earconItem, inputText.getText, uri.toString)
-    } else processTag(earconItem, inputText.getText, "")
+      processTag(R.id.action_tts_earcon, inputText.getText, uri.toString)
+    } else processTag(R.id.action_tts_earcon, inputText.getText, "")
     case _ => super.onActivityResult(requestCode, resultCode, data)
   }
 
