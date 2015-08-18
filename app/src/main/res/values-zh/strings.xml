@@ -22,9 +22,9 @@
     <string name="settings_preferred_engine">使用引擎</string>
     <string name="settings_voice">声音</string>
     <string name="settings_tweaks">调整 (可能不支持)</string>
-    <string name="settings_pitch">音高 (正常为 100)</string>
-    <string name="settings_speech_rate">语速 (正常为 100)</string>
-    <string name="settings_pan">平衡 (介于 [-1, 1] 之间，正常为 0)</string>
+    <string name="settings_pitch">音高</string>
+    <string name="settings_speech_rate">语速</string>
+    <string name="settings_pan">平衡</string>
     <string name="settings_text">文本处理</string>
     <string name="settings_start_from">开始位置</string>
     <string name="settings_ignore_single_line_break">忽略单个换行</string>
@@ -100,4 +100,6 @@
     </string>
     <string name="settings_show_legacy_voices">显示传统声音</string>
     <string name="settings_show_legacy_voices_summary">显示为 4.x 及更低版本用户设计的声音。</string>
+        <string name="settings_pitch_summary">%d (正常为 100)</string>
+        <string name="settings_speech_rate_summary">%d (正常为 100)</string>
 </resources>

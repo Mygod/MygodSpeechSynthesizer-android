@@ -13,13 +13,12 @@
     <PreferenceCategory android:title="@string/settings_tweaks">
         <tk.mygod.preference.NumberPickerPreference android:key="tweaks.pitch" android:defaultValue="100"
                                                     android:title="@string/settings_pitch"
-                                                    app:summary="%d" app:min="1"/>
+                                                    app:summary="@string/settings_pitch_summary" app:min="1"/>
         <tk.mygod.preference.NumberPickerPreference android:key="tweaks.speechRate" android:defaultValue="100"
                                                     android:title="@string/settings_speech_rate"
-                                                    app:summary="%d" app:min="1"/>
-        <tk.mygod.preference.EditTextPlusPreference android:key="tweaks.pan" android:defaultValue="0" app:summary="%s"
-                                                    android:title="@string/settings_pan"
-                                                    android:inputType="numberDecimal|numberSigned"/>
+                                                    app:summary="@string/settings_speech_rate_summary" app:min="1"/>
+        <tk.mygod.preference.SeekBarPreference android:key="tweaks.pan" android:defaultValue="0" app:summary="%.2f"
+                                               android:title="@string/settings_pan" app:min="-1" app:reset="0"/>
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/settings_text">
         <tk.mygod.preference.DropDownPreference android:key="text.start" app:summary="%s"

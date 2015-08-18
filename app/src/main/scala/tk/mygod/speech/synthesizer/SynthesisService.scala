@@ -166,7 +166,7 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
     textLength = length
     engines.selectedEngine.pitch = App.pref.getInt("tweaks.pitch", 100)
     engines.selectedEngine.speechRate = App.pref.getInt("tweaks.speechRate", 100)
-    engines.selectedEngine.pan = App.pref.getString("tweaks.pan", "0").toFloat
+    engines.selectedEngine.pan = App.pref.getFloat("tweaks.pan", 0)
     if (App.mainFragment != null) App.mainFragment.onTtsSynthesisStarting(length)
   }
   override def onTtsSynthesisPrepared(end: Int) {
