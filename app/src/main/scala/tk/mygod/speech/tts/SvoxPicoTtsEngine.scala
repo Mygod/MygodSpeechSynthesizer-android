@@ -373,8 +373,8 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
   private def getParams(id: String) = {
     val params = new util.HashMap[String, String]()
     params.put(ConstantsWrapper.KEY_PARAM_UTTERANCE_ID, id)
-    tts.setSpeechRate(speechRate)
-    tts.setPitch(pitch)
+    tts.setSpeechRate(speechRate / 100F)
+    tts.setPitch(pitch / 100F)
     params.put(ConstantsWrapper.KEY_PARAM_PAN, pan.toString)
     params
   }
