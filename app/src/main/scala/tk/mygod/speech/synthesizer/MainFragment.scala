@@ -19,6 +19,7 @@ import android.webkit.MimeTypeMap
 import android.widget.ProgressBar
 import tk.mygod.CurrentApp
 import tk.mygod.app.ToolbarFragment
+import tk.mygod.speech.synthesizer.MainFragment._
 import tk.mygod.speech.tts.OnTtsSynthesisCallbackListener
 import tk.mygod.util.IOUtils
 import tk.mygod.util.MethodWrappers._
@@ -36,8 +37,7 @@ object MainFragment {
     dest.subSequence(dstart, dend)))
 }
 
-final class MainFragment extends ToolbarFragment
-  with OnTtsSynthesisCallbackListener with OnMenuItemClickListener {
+final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackListener with OnMenuItemClickListener {
   private var mainActivity: MainActivity = _
   private var progressBar: ProgressBar = _
   var inputText: AppCompatEditText = _
@@ -316,12 +316,12 @@ final class MainFragment extends ToolbarFragment
         SynthesisService.read {
           val mime = SynthesisService.instance.engines.selectedEngine.getMimeType
           runOnUiThread(mainActivity.showSave(mime, App.getSaveFileName + '.' +
-            MimeTypeMap.getSingleton.getExtensionFromMimeType(mime), MainFragment.SAVE_SYNTHESIS))
+            MimeTypeMap.getSingleton.getExtensionFromMimeType(mime), SAVE_SYNTHESIS))
         }
         true
       case R.id.action_open =>
         try startActivityForResult(new Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE)
-          .setType(mime), MainFragment.OPEN_TEXT)
+          .setType(mime), OPEN_TEXT)
         catch {
           case e: ActivityNotFoundException => showToast(R.string.open_error_no_browser)
         }
@@ -330,7 +330,7 @@ final class MainFragment extends ToolbarFragment
         val extension = if (ssml) ".ssml" else ".txt"
         var fileName = App.getSaveFileName
         if (!fileName.toLowerCase.endsWith(extension)) fileName += extension
-        mainActivity.showSave(mime, fileName, MainFragment.SAVE_TEXT)
+        mainActivity.showSave(mime, fileName, SAVE_TEXT)
         true
       case R.id.action_settings =>
         mainActivity.showSettings
@@ -354,8 +354,8 @@ final class MainFragment extends ToolbarFragment
     }
   }
 
-  def save(uri: Uri, requestCode: Int) = requestCode match {
-    case MainFragment.SAVE_TEXT =>
+  def save(uri: Uri, requestCode: Int): Unit = requestCode match {
+    case SAVE_TEXT =>
       var output: OutputStream = null
       try {
         output = getActivity.getContentResolver.openOutputStream(uri)
@@ -367,7 +367,7 @@ final class MainFragment extends ToolbarFragment
       } finally if (output != null) try output.close catch {
         case e: IOException => e.printStackTrace
       }
-    case MainFragment.SAVE_SYNTHESIS =>
+    case SAVE_SYNTHESIS =>
       SynthesisService.write(SynthesisService.instance.synthesizeToUri(getText, getStartOffset, uri), {
         case e: Exception =>
           e.printStackTrace
@@ -375,12 +375,12 @@ final class MainFragment extends ToolbarFragment
           SynthesisService.instance.stop
       })
   }
-  protected override def onActivityResult(requestCode: Int, resultCode: Int, data: Intent) = requestCode match {
-    case MainFragment.OPEN_TEXT =>
+  override def onActivityResult(requestCode: Int, resultCode: Int, data: Intent) = requestCode match {
+    case OPEN_TEXT =>
       if (resultCode == Activity.RESULT_OK) mainActivity.onNewIntent(data)
-    case MainFragment.SAVE_TEXT | MainFragment.SAVE_SYNTHESIS =>
+    case SAVE_TEXT | SAVE_SYNTHESIS =>
       if (resultCode == Activity.RESULT_OK) save(data.getData, requestCode)
-    case MainFragment.OPEN_EARCON => if (resultCode == Activity.RESULT_OK) {
+    case OPEN_EARCON => if (resultCode == Activity.RESULT_OK) {
       val uri = data.getData
       if (Build.VERSION.SDK_INT >= 19)
         try getActivity.getContentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -395,7 +395,7 @@ final class MainFragment extends ToolbarFragment
   def onTtsSynthesisStarting(length: Int) = runOnUiThread {
     fab.setImageDrawable(R.drawable.ic_av_mic)
     menu.setGroupEnabled(R.id.disabled_when_synthesizing, false)
-    inputText.setFilters(MainFragment.readonlyFilters)
+    inputText.setFilters(readonlyFilters)
     inputMethodManager.hideSoftInputFromWindow(inputText.getWindowToken, InputMethodManager.HIDE_NOT_ALWAYS)
     progressBar.setIndeterminate(true)
     progressBar.setVisibility(View.VISIBLE)
@@ -430,7 +430,7 @@ final class MainFragment extends ToolbarFragment
   def onTtsSynthesisFinished = runOnUiThread {
     fab.setImageDrawable(R.drawable.ic_av_mic_none)
     menu.setGroupEnabled(R.id.disabled_when_synthesizing, true)
-    inputText.setFilters(MainFragment.noFilters)
+    inputText.setFilters(noFilters)
     progressBar.setVisibility(View.INVISIBLE)
   }
 

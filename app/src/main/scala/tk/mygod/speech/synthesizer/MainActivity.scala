@@ -1,19 +1,20 @@
 package tk.mygod.speech.synthesizer
 
-import java.io.{IOException, InputStream}
+import java.io.{File, IOException, InputStream}
 
 import android.content.Intent
 import android.media.AudioManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.{MediaStore, OpenableColumns}
+import tk.mygod.app.SaveFileFragment.SaveFileCallback
 import tk.mygod.app.{FragmentStackActivity, LocationObservedActivity, SaveFileFragment}
 import tk.mygod.util.IOUtils
 
 /**
  * @author Mygod
  */
-final class MainActivity extends FragmentStackActivity with LocationObservedActivity {
+final class MainActivity extends FragmentStackActivity with LocationObservedActivity with SaveFileCallback {
   private lazy val serviceIntent = new Intent(getApplicationContext, classOf[SynthesisService])
   var settingsFragment: SettingsFragment = _
 
@@ -84,10 +85,11 @@ final class MainActivity extends FragmentStackActivity with LocationObservedActi
   }
 
   def showSave(mimeType: String, fileName: String, requestCode: Int) = if (App.oldTimeySaveUI) {
-      val fragment = new SaveFileFragment(file => App.mainFragment.save(Uri.fromFile(file), requestCode), mimeType,
-        App.lastSaveDir, fileName)
+      val fragment = new SaveFileFragment(requestCode, mimeType, App.lastSaveDir, fileName)
       fragment.setSpawnLocation(getLocationOnScreen)
       push(fragment)
     } else App.mainFragment.startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT)
       .addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_TITLE, fileName).setType(mimeType), requestCode)
+
+  def saveFilePicked(file: File, requestCode: Int) = App.mainFragment.save(Uri.fromFile(file), requestCode)
 }
