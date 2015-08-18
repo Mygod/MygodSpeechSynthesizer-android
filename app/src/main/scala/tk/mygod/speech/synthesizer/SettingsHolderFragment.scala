@@ -4,7 +4,7 @@ import java.text.DecimalFormat
 
 import android.content.Intent
 import android.graphics.drawable.Drawable
-import android.os.Bundle
+import android.os.{Build, Bundle}
 import android.preference.{Preference, PreferenceFragment}
 import android.text.style.TextAppearanceSpan
 import android.text.{SpannableStringBuilder, Spanned, TextUtils}
@@ -65,10 +65,11 @@ class SettingsHolderFragment extends PreferenceFragment with FragmentPlus {
       updateVoices(Some(newValue.asInstanceOf[Boolean]))
       true
     })
-    findPreference("text.enableSsmlDroid").setOnPreferenceChangeListener((preference: Preference, newValue: Any) => {
-      App.mainFragment.styleItem.setVisible(newValue.asInstanceOf[Boolean])
-      true
-    })
+    if (Build.VERSION.SDK_INT < 23)
+      findPreference("text.enableSsmlDroid").setOnPreferenceChangeListener((preference: Preference, newValue: Any) => {
+        App.mainFragment.styleItem.setVisible(newValue.asInstanceOf[Boolean])
+        true
+      })
     findPreference("ssmlDroid.userGuidelines").setOnPreferenceClickListener((preference: Preference) => {
       startActivity(new Intent(Intent.ACTION_VIEW, R.string.url_ssmldroid_user_guidelines))
       true

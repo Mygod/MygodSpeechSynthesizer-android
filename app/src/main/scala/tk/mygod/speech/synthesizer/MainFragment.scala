@@ -13,6 +13,7 @@ import android.support.design.widget.{FloatingActionButton, Snackbar}
 import android.support.v7.widget.AppCompatEditText
 import android.support.v7.widget.Toolbar.OnMenuItemClickListener
 import android.text.InputFilter
+import android.view.ActionMode.Callback2
 import android.view._
 import android.view.inputmethod.InputMethodManager
 import android.webkit.MimeTypeMap
@@ -80,7 +81,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
     toolbar.inflateMenu(R.menu.main_fragment_actions)
     menu = toolbar.getMenu
     styleItem = menu.findItem(R.id.action_style)
-    styleItem.setVisible(App.enableSsmlDroid)
+    styleItem.setVisible(Build.VERSION.SDK_INT < 23 && App.enableSsmlDroid)
     toolbar.setOnMenuItemClickListener(this)
     progressBar = result.findViewById(R.id.progressBar).asInstanceOf[ProgressBar]
     fab = result.findViewById(R.id.fab).asInstanceOf[FloatingActionButton]
@@ -95,6 +96,20 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
       } else SynthesisService.instance.stop))
     val buildTime = CurrentApp.getBuildTime(getActivity)
     inputText = result.findViewById(R.id.input_text).asInstanceOf[AppCompatEditText]
+    if (Build.VERSION.SDK_INT >= 23) {
+      val callback2 = new Callback2 {
+        def onCreateActionMode(mode: ActionMode, menu: Menu) = {
+          if (App.enableSsmlDroid) menu.add(0, R.id.action_style, Menu.CATEGORY_SECONDARY, R.string.action_style)
+          true
+        }
+        def onDestroyActionMode(mode: ActionMode) = ()
+        def onActionItemClicked(mode: ActionMode, item: MenuItem) =
+          item.getItemId == R.id.action_style && onMenuItemClick(item)
+        def onPrepareActionMode(mode: ActionMode, menu: Menu) = false
+      }
+      inputText.setCustomInsertionActionModeCallback(callback2)
+      inputText.setCustomSelectionActionModeCallback(callback2)
+    }
     var failed = true
     if (App.enableSsmlDroid) try {
       inputText.setText(formatDefaultText(IOUtils.readAllText(getResources.openRawResource(R.raw.input_text_default)),
@@ -127,8 +142,8 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
     menu.setHeaderTitle(R.string.action_style)
   }
 
-  private def processTag(id: Int, source: CharSequence, selection: CharSequence, value: CharSequence = null): Boolean =
-  {
+  private def processTag(id: Int, source: CharSequence, selection: CharSequence = "", value: CharSequence = null)
+    : Boolean = {
     var tag: String = null
     var toast: String = null
     var position = 0
@@ -296,7 +311,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
       intent.addCategory(Intent.CATEGORY_OPENABLE)
       intent.setType("audio/*")
       startActivityForResult(intent, MainFragment.OPEN_EARCON)
-    } else if (processTag(item.getItemId | item.getGroupId, item.getTitleCondensed, source, selection))
+    } else if (processTag(item.getItemId | item.getGroupId, source, selection, item.getTitleCondensed))
       return super.onContextItemSelected(item)
     true
   }
@@ -388,7 +403,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
           case ignore: Exception =>
         }
       processTag(R.id.action_tts_earcon, inputText.getText, uri.toString)
-    } else processTag(R.id.action_tts_earcon, inputText.getText, "")
+    } else processTag(R.id.action_tts_earcon, inputText.getText)
     case _ => super.onActivityResult(requestCode, resultCode, data)
   }
 
