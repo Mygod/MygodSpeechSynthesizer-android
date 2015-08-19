@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.{PowerManager, ParcelFileDescriptor}
 import android.support.annotation.IntDef
 import android.support.v4.app.NotificationCompat
+import android.support.v4.content.ContextCompat
 import tk.mygod.concurrent.FailureHandler
 import tk.mygod.content.ContextPlus
 import tk.mygod.speech.tts.{AvailableTtsEngines, OnTtsSynthesisCallbackListener, TtsEngine}
@@ -76,7 +77,8 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
     engines = new AvailableTtsEngines(this)
     selectEngine(engineID)
     builder = new NotificationCompat.Builder(this).setContentTitle(R.string.notification_title).setAutoCancel(true)
-      .setSmallIcon(R.drawable.ic_communication_message).setColor(getResources.getColor(R.color.material_purple_500))
+      .setSmallIcon(R.drawable.ic_communication_message)
+      .setColor(ContextCompat.getColor(this, R.color.material_purple_500))
       .setContentIntent(pendingIntent[MainActivity]).setCategory(NotificationCompat.CATEGORY_PROGRESS)
       .setVisibility(NotificationCompat.VISIBILITY_PUBLIC).setVibrate(new Array[Long](0))
       .setDeleteIntent(pendingIntentBroadcast(SynthesisService.STOP))

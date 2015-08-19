@@ -63,6 +63,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
 
   override def isFullscreen = true
 
+  //noinspection ScalaDeprecation
   override def onAttach(activity: Activity) {
     super.onAttach(activity)
     mainActivity = activity.asInstanceOf[MainActivity]
