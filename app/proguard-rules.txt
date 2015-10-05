@@ -20,5 +20,32 @@
 -ignorewarnings
 # temporary workaround; see Scala issue SI-5397
 -keep class scala.collection.SeqLike { public protected *; }
+
 # see bug: https://code.google.com/p/android/issues/detail?id=178339
 -keepclassmembers class android.support.design.widget.FloatingActionButton$Behavior { public <init>(); }
+
+# src/main/res/xml/settings.xml
+-keepclasseswithmembers class android.support.v7.preference.PreferenceScreen {
+    public <init>(android.content.Context, android.util.AttributeSet);
+}
+-keepclasseswithmembers class android.support.v7.preference.PreferenceCategory {
+    public <init>(android.content.Context, android.util.AttributeSet);
+}
+-keepclasseswithmembers class tk.mygod.preference.IconListPreference {
+    public <init>(android.content.Context, android.util.AttributeSet);
+}
+-keepclasseswithmembers class android.support.v14.preference.SwitchPreference {
+    public <init>(android.content.Context, android.util.AttributeSet);
+}
+-keepclasseswithmembers class tk.mygod.preference.NumberPickerPreference {
+    public <init>(android.content.Context, android.util.AttributeSet);
+}
+-keepclasseswithmembers class tk.mygod.preference.SeekBarPreference {
+    public <init>(android.content.Context, android.util.AttributeSet);
+}
+-keepclasseswithmembers class tk.mygod.preference.DropDownPreference {
+    public <init>(android.content.Context, android.util.AttributeSet);
+}
+-keepclasseswithmembers class android.support.v7.preference.Preference {
+    public <init>(android.content.Context, android.util.AttributeSet);
+}

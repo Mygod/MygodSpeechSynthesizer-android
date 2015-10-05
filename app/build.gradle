@@ -16,13 +16,13 @@ repositories {
 
 android {
     compileSdkVersion 23
-    buildToolsVersion '23.0.0'
+    buildToolsVersion '23.0.1'
 
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 23
-        versionCode 356
-        versionName "2.2.14.356"
+        versionCode 363
+        versionName "2.2.15.363"
     }
     buildTypes {
         debug {
@@ -45,4 +45,8 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile project(':mygod-lib-android')
+}
+
+tasks.withType(ScalaCompile) {
+    scalaCompileOptions.additionalParameters = ["-Xexperimental"]
 }

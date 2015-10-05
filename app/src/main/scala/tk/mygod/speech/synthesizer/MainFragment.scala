@@ -12,7 +12,7 @@ import android.os.{Build, Bundle}
 import android.support.design.widget.{FloatingActionButton, Snackbar}
 import android.support.v7.widget.AppCompatEditText
 import android.support.v7.widget.Toolbar.OnMenuItemClickListener
-import android.text.InputFilter
+import android.text.{Spanned, InputFilter}
 import android.view.ActionMode.Callback2
 import android.view._
 import android.view.inputmethod.InputMethodManager
@@ -23,7 +23,6 @@ import tk.mygod.app.ToolbarFragment
 import tk.mygod.speech.synthesizer.MainFragment._
 import tk.mygod.speech.tts.OnTtsSynthesisCallbackListener
 import tk.mygod.util.IOUtils
-import tk.mygod.util.MethodWrappers._
 
 /**
  * @author Mygod
@@ -34,8 +33,8 @@ object MainFragment {
   val SAVE_SYNTHESIS = 2
   val OPEN_EARCON = 3
   val noFilters = new Array[InputFilter](0)
-  val readonlyFilters = Array[InputFilter](inputFilter((src, start, end, dest, dstart, dend) =>
-    dest.subSequence(dstart, dend)))
+  val readonlyFilters = Array[InputFilter]((src: CharSequence, start: Int, end: Int, dest: Spanned, dstart: Int,
+   dend: Int) => dest.subSequence(dstart, dend))
 }
 
 final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackListener with OnMenuItemClickListener {

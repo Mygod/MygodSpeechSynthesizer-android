@@ -141,7 +141,7 @@ final class GoogleTranslateTtsEngine(context: Context) extends TtsEngine(context
         if (listener != null) listener.onTtsSynthesisCallback(part.start, part.end)
         val str = currentText.subSequence(part.start, part.end).toString
         input = if (part.isEarcon) context.getContentResolver.openInputStream(str)
-        else new URL(getUrl(str)).openStream
+          else new URL(getUrl(str)).openStream()
         IOUtils.copy(input, output)
         if (listener != null) listener.onTtsSynthesisCallback(part.end, part.end)
       } catch {

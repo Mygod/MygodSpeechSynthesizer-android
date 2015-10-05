@@ -12,7 +12,7 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:name=".App"
-        android:theme="@style/Theme.Material.Purple"
+        android:theme="@style/Theme.Material"
         android:supportsRtl="true">
         <activity
             android:name=".MainActivity"

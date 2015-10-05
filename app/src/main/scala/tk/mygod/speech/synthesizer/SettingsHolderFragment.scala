@@ -5,14 +5,12 @@ import java.text.DecimalFormat
 import android.content.Intent
 import android.graphics.drawable.Drawable
 import android.os.{Build, Bundle}
-import android.preference.{Preference, PreferenceFragment}
+import android.support.v7.preference.Preference
 import android.text.style.TextAppearanceSpan
 import android.text.{SpannableStringBuilder, Spanned, TextUtils}
-import tk.mygod.app.FragmentPlus
 import tk.mygod.concurrent.FailureHandler
-import tk.mygod.preference.IconListPreference
+import tk.mygod.preference._
 import tk.mygod.speech.tts.{ConstantsWrapper, LocaleWrapper, TtsEngine}
-import tk.mygod.util.MethodWrappers._
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -21,12 +19,11 @@ import scala.concurrent.Future
 /**
  * @author Mygod
  */
-class SettingsHolderFragment extends PreferenceFragment with FragmentPlus {
+final class SettingsHolderFragment extends PreferenceFragmentPlus {
   private var engine: IconListPreference = _
   private var voice: IconListPreference = _
 
-  override def onCreate(savedInstanceState: Bundle) {
-    super.onCreate(savedInstanceState)
+  def onCreatePreferences(savedInstanceState: Bundle, rootKey: String) {
     getPreferenceManager.setSharedPreferencesName("settings")
     addPreferencesFromResource(R.xml.settings)
     engine = findPreference("engine").asInstanceOf[IconListPreference]
@@ -130,5 +127,12 @@ class SettingsHolderFragment extends PreferenceFragment with FragmentPlus {
         voice.init
       }
     } onFailure FailureHandler
+  }
+
+  override def onDisplayPreferenceDialog(preference: Preference) = preference match {
+    case p: IconListPreference => displayPreferenceDialog(new IconListPreferenceDialogFragment(p.getKey))
+    case p: NumberPickerPreference => displayPreferenceDialog(new NumberPickerPreferenceDialogFragment(p.getKey))
+    case p: SeekBarPreference => displayPreferenceDialog(new SeekBarPreferenceDialogFragment(p.getKey))
+    case _ => super.onDisplayPreferenceDialog(preference)
   }
 }
