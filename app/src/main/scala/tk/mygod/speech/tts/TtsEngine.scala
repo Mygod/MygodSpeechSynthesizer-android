@@ -10,7 +10,8 @@ import scala.collection.immutable
 /**
  * @author Mygod
  */
-abstract class TtsEngine(protected var context: Context) {
+abstract class TtsEngine(protected var context: Context,
+                         private val selfDestructionListener: TtsEngine => Any = null) {
   def getVoices: immutable.SortedSet[TtsVoice]
   def getVoice: TtsVoice
   def setVoice(voice: TtsVoice): Boolean
@@ -37,5 +38,7 @@ abstract class TtsEngine(protected var context: Context) {
   def speak(text: CharSequence, startOffset: Int)
   def synthesizeToStream(text: CharSequence, startOffset: Int, output: FileOutputStream, cacheDir: File)
   def stop
-  def onDestroy
+  def onDestroy = _destroyed = true
+  private var _destroyed = false
+  def destroyed = _destroyed
 }

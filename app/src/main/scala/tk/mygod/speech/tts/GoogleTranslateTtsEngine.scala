@@ -25,7 +25,8 @@ object GoogleTranslateTtsEngine {
                          .map(lang => new LocaleWrapper(lang).asInstanceOf[TtsVoice]).to[immutable.SortedSet]
 }
 
-final class GoogleTranslateTtsEngine(context: Context) extends TtsEngine(context) {
+final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: TtsEngine => Any = null)
+  extends TtsEngine(context, selfDestructionListener) {
   private final class SpeakTask(private val currentText: CharSequence, private val startOffset: Int,
                                 finished: () => Unit = null) extends StoppableFuture(finished) {
     private val playbackQueue = new ArrayBlockingQueue[AnyRef](29)
@@ -207,5 +208,8 @@ final class GoogleTranslateTtsEngine(context: Context) extends TtsEngine(context
     if (speakTask != null) speakTask.stop
     if (synthesizeToStreamTask != null) synthesizeToStreamTask.stop
   }
-  def onDestroy = stop
+  override def onDestroy {
+    stop
+    super.onDestroy
+  }
 }

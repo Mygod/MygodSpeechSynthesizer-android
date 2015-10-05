@@ -10,13 +10,20 @@ import scala.collection.mutable.ArrayBuffer
  */
 final class AvailableTtsEngines(context: Context) extends ArrayBuffer[TtsEngine] {
   var selectedEngine: TtsEngine = {
-    val defaultEngine: SvoxPicoTtsEngine = new SvoxPicoTtsEngine(context)
-    append(defaultEngine)
-    val defaultEngineName: String = defaultEngine.tts.getDefaultEngine
-    for (info <- defaultEngine.tts.getEngines) if (info.name == defaultEngineName) defaultEngine.engineInfo = info
-    else append(new SvoxPicoTtsEngine(context, info))
-    append(new GoogleTranslateTtsEngine(context))
-    defaultEngine
+    def appendIfValid(engine: TtsEngine) = if (!engine.destroyed) append(engine)
+    def selfDestructionDetected(engine: TtsEngine) = {
+      val index = indexOf(engine)
+      if (index >= 0) remove(index)
+    }
+    val defaultEngine: SvoxPicoTtsEngine = new SvoxPicoTtsEngine(context, null, selfDestructionDetected)
+    if (!defaultEngine.destroyed) {
+      append(defaultEngine)
+      val defaultEngineName = defaultEngine.tts.getDefaultEngine
+      for (info <- defaultEngine.tts.getEngines) if (info.name == defaultEngineName) defaultEngine.engineInfo = info
+        else appendIfValid(new SvoxPicoTtsEngine(context, info, selfDestructionDetected))
+    }
+    appendIfValid(new GoogleTranslateTtsEngine(context, selfDestructionDetected))
+    head
   }
 
   def selectEngine(id: String): Boolean = {

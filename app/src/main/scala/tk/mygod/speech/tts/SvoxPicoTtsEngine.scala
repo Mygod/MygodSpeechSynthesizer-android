@@ -2,7 +2,6 @@ package tk.mygod.speech.tts
 
 import java.io._
 import java.lang.reflect.Field
-import java.lang.{Float => BoxedFloat}
 import java.util
 import java.util.Locale
 import java.util.concurrent.{LinkedBlockingDeque, Semaphore}
@@ -41,8 +40,9 @@ object SvoxPicoTtsEngine {
   }
 }
 
-final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
-  extends TtsEngine(context) with OnInitListener {
+final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
+                              selfDestructionListener: TtsEngine => Any = null)
+  extends TtsEngine(context, selfDestructionListener) with OnInitListener {
   @TargetApi(Build.VERSION_CODES.LOLLIPOP)
   private final class VoiceWrapper(var voice: Voice) extends TtsVoice {
     def getFeatures = voice.getFeatures
@@ -245,19 +245,21 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
     }
   })
 
-  def onInit(status: Int) {
-    if (status != TextToSpeech.SUCCESS) throw new RuntimeException("SvoxPicoTtsEngine initialization failed.")
-    Future {
-      initVoices
-      initLock.release
-      //noinspection ScalaDeprecation
-      if (preInitSetVoice != null) setVoice(preInitSetVoice)
-      else if (useNativeVoice) {
-        val voice = tts.getDefaultVoice
-        if (voice != null) tts.setVoice(voice)
-      } else setVoice(new LocaleVoice(if (Build.VERSION.SDK_INT >= 18) tts.getDefaultLanguage
-      else context.getResources.getConfiguration.locale))
-    }
+  def onInit(status: Int) = if (status != TextToSpeech.SUCCESS) {
+    Log.e("tk.mygod.speech.tts.SvoxPicoTtsEngine", "TextToSpeech init failed: " + status)
+    initLock.release
+    if (selfDestructionListener != null) selfDestructionListener(this)
+    onDestroy
+  } else Future {
+    initVoices
+    initLock.release
+    //noinspection ScalaDeprecation
+    if (preInitSetVoice != null) setVoice(preInitSetVoice)
+    else if (useNativeVoice) {
+      val voice = tts.getDefaultVoice
+      if (voice != null) tts.setVoice(voice)
+    } else setVoice(new LocaleVoice(if (Build.VERSION.SDK_INT >= 18) tts.getDefaultLanguage
+    else context.getResources.getConfiguration.locale))
   }
 
   private def initVoices {
@@ -393,11 +395,12 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null)
   def stop {
     if (speakTask != null) speakTask.stop
     if (synthesizeToStreamTask != null) synthesizeToStreamTask.stop
-    tts.stop
+    if (tts != null) tts.stop
   }
 
-  def onDestroy {
+  override def onDestroy {
     stop
-    tts.shutdown
+    if (tts != null) tts.shutdown
+    super.onDestroy
   }
 }
