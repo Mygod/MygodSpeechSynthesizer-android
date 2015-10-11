@@ -104,7 +104,7 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
           while (failed) try {
             player = new MediaPlayer
             player.setAudioStreamType(AudioManager.STREAM_MUSIC)
-            val str: String = currentText.subSequence(part.start, part.end).toString
+            val str = currentText.subSequence(part.start, part.end).toString
             player.setDataSource(if (part.isEarcon) str else getUrl(str))
             player.prepare
             failed = false
