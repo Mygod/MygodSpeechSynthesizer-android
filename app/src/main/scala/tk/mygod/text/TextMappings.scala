@@ -45,19 +45,20 @@ class TextMappings {
   /**
    * Get target offset from text offset. Takes O(log n) where n is the number of tags. Thread-safe.
    * @param sourceOffset Source offset.
-   * @param preferLeft If there is an tag at the specified offset, go as left as possible.
-   *                   Otherwise, go as right as possible.
    * @return Target offset.
    */
-  def getTargetOffset(sourceOffset: Int, preferLeft: Boolean) = {
+  def getTargetOffset(sourceOffset: Int) = {
     var l = 0
     var r = mappings.size
     while (l < r) {
       val mid = (l + r) >> 1
       val pos = mappings(mid).sourceOffset
-      if (sourceOffset < pos || sourceOffset == pos && preferLeft) r = mid else l = mid + 1
+      if (sourceOffset == pos) {
+        l = mid
+        r = mid
+      } else if (sourceOffset < pos) r = mid else l = mid + 1
     }
-    val mapping = mappings(if (preferLeft) l else l - 1)
+    val mapping = mappings(l)
     mapping.targetOffset + sourceOffset - mapping.sourceOffset
   }
 }
