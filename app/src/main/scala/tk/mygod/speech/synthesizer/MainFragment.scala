@@ -103,8 +103,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
           true
         }
         def onDestroyActionMode(mode: ActionMode) = ()
-        def onActionItemClicked(mode: ActionMode, item: MenuItem) =
-          item.getItemId == R.id.action_style && onMenuItemClick(item)
+        def onActionItemClicked(mode: ActionMode, item: MenuItem) = onMenuItemClick(item)
         def onPrepareActionMode(mode: ActionMode, menu: Menu) = false
       }
       inputText.setCustomInsertionActionModeCallback(callback2)
