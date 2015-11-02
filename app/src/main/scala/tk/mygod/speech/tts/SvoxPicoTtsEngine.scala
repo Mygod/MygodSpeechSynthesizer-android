@@ -400,7 +400,10 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
 
   override def onDestroy {
     stop
-    if (tts != null) tts.shutdown
+    if (tts != null) {
+      tts.shutdown
+      tts = null
+    }
     super.onDestroy
   }
 }
