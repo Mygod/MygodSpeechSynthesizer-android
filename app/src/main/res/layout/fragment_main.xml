@@ -6,16 +6,28 @@
     <android.support.design.widget.CoordinatorLayout android:id="@android:id/content"
                                                      android:layout_width="match_parent"
                                                      android:layout_height="match_parent">
-        <ScrollView android:id="@+id/scroller" android:fillViewport="true"
-                    android:layout_width="match_parent" android:layout_height="match_parent">
-            <android.support.v7.widget.AppCompatEditText android:layout_width="fill_parent" android:gravity="top"
-                                                         android:layout_height="wrap_content"
-                                                         android:background="#00000000" android:id="@+id/input_text"
-                                                         android:paddingTop="10dp" android:paddingLeft="15dp"
-                                                         android:paddingRight="15dp" android:paddingBottom="82dp"
-                                                         android:inputType="textMultiLine"
-                                                         android:imeOptions="flagNoFullscreen" />
-        </ScrollView>
+        <android.support.v4.view.ViewPager android:layout_width="match_parent"
+                                           android:layout_height="match_parent" android:id="@+id/pager">
+            <ScrollView android:fillViewport="true"
+                        android:layout_width="match_parent" android:layout_height="match_parent">
+                <android.support.v7.widget.AppCompatEditText android:layout_width="match_parent" android:gravity="top"
+                                                             android:layout_height="wrap_content"
+                                                             android:background="#00000000" android:id="@+id/input_text"
+                                                             android:paddingTop="10dp" android:paddingLeft="15dp"
+                                                             android:paddingRight="15dp" android:paddingBottom="82dp"
+                                                             android:inputType="textMultiLine"
+                                                             android:imeOptions="flagNoFullscreen" />
+            </ScrollView>
+            <ScrollView android:fillViewport="true"
+                        android:layout_width="match_parent" android:layout_height="match_parent">
+                <android.support.v7.widget.AppCompatTextView android:layout_width="match_parent" android:gravity="top"
+                                                             android:layout_height="wrap_content"
+                                                             android:background="#00000000" android:id="@+id/text_view"
+                                                             style="?attr/editTextStyle" android:textIsSelectable="true"
+                                                             android:paddingTop="10dp" android:paddingLeft="15dp"
+                                                             android:paddingRight="15dp" android:paddingBottom="82dp" />
+            </ScrollView>
+        </android.support.v4.view.ViewPager>
         <ProgressBar android:id="@+id/progressBar" style="@style/Widget.AppCompat.ProgressBar.Horizontal"
                      android:layout_width="match_parent" android:layout_height="wrap_content"
                      android:visibility="invisible" android:layout_marginTop="-8dp" />

@@ -10,19 +10,24 @@ import android.content._
 import android.net.{ParseException, Uri}
 import android.os.{Build, Bundle}
 import android.support.design.widget.{FloatingActionButton, Snackbar}
-import android.support.v7.widget.AppCompatEditText
+import android.support.v4.content.ContextCompat
+import android.support.v4.view.ViewPager
 import android.support.v7.widget.Toolbar.OnMenuItemClickListener
-import android.text.{Spanned, InputFilter}
+import android.support.v7.widget.{AppCompatEditText, AppCompatTextView}
+import android.text.Spanned
+import android.text.style.BackgroundColorSpan
 import android.view.ActionMode.Callback2
 import android.view._
 import android.view.inputmethod.InputMethodManager
 import android.webkit.MimeTypeMap
 import android.widget.ProgressBar
+import android.widget.TextView.BufferType
 import tk.mygod.CurrentApp
 import tk.mygod.app.ToolbarFragment
 import tk.mygod.speech.synthesizer.MainFragment._
 import tk.mygod.speech.tts.OnTtsSynthesisCallbackListener
 import tk.mygod.util.IOUtils
+import tk.mygod.widget.ViewPagerAdapter
 
 /**
  * @author Mygod
@@ -32,15 +37,14 @@ object MainFragment {
   val SAVE_TEXT = 1
   val SAVE_SYNTHESIS = 2
   val OPEN_EARCON = 3
-  val noFilters = new Array[InputFilter](0)
-  val readonlyFilters = Array[InputFilter]((src: CharSequence, start: Int, end: Int, dest: Spanned, dstart: Int,
-   dend: Int) => dest.subSequence(dstart, dend))
 }
 
 final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackListener with OnMenuItemClickListener {
   private var mainActivity: MainActivity = _
   private var progressBar: ProgressBar = _
+  var pager: ViewPager = _
   var inputText: AppCompatEditText = _
+  var textView: AppCompatTextView = _
   private var menu: Menu = _
   var styleItem: MenuItem = _
   private var fab: FloatingActionButton = _
@@ -48,6 +52,8 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
   private var selectionEnd: Int = _
   private lazy val inputMethodManager =
     getActivity.getSystemService(Context.INPUT_METHOD_SERVICE).asInstanceOf[InputMethodManager]
+  private lazy val highlightSpan =
+    new BackgroundColorSpan(ContextCompat.getColor(getActivity, R.color.material_purple_300_highlight))
 
   private def formatDefaultText(pattern: String, buildTime: Date) = {
     val calendar = Calendar.getInstance
@@ -95,7 +101,10 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
         }
       } else SynthesisService.instance.stop))
     val buildTime = CurrentApp.getBuildTime(getActivity)
+    pager = result.findViewById(R.id.pager).asInstanceOf[ViewPager]
+    pager.setAdapter(new ViewPagerAdapter(pager))
     inputText = result.findViewById(R.id.input_text).asInstanceOf[AppCompatEditText]
+    textView = result.findViewById(R.id.text_view).asInstanceOf[AppCompatTextView]
     if (Build.VERSION.SDK_INT >= 23) {
       val callback2 = new Callback2 {
         def onCreateActionMode(mode: ActionMode, menu: Menu) = {
@@ -409,7 +418,8 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
   def onTtsSynthesisStarting(length: Int) = runOnUiThread {
     fab.setImageDrawable(R.drawable.ic_av_mic)
     menu.setGroupEnabled(R.id.disabled_when_synthesizing, false)
-    inputText.setFilters(readonlyFilters)
+    textView.setText(inputText.getText, BufferType.EDITABLE)
+    pager.setCurrentItem(1, false)
     inputMethodManager.hideSoftInputFromWindow(inputText.getWindowToken, InputMethodManager.HIDE_NOT_ALWAYS)
     progressBar.setIndeterminate(true)
     progressBar.setVisibility(View.VISIBLE)
@@ -437,14 +447,16 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
       }
       progressBar.setProgress(s)
       inputText.setSelection(start, end)
-      inputText.moveCursorToVisibleOffset
+      if (start != end) textView.getEditableText.setSpan(highlightSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+      else textView.getEditableText.removeSpan(highlightSpan)
+      textView.bringPointIntoView(end)
     }
   }
   def onTtsSynthesisError(start: Int, end: Int) = ()
   def onTtsSynthesisFinished = runOnUiThread {
     fab.setImageDrawable(R.drawable.ic_av_mic_none)
     menu.setGroupEnabled(R.id.disabled_when_synthesizing, true)
-    inputText.setFilters(noFilters)
+    pager.setCurrentItem(0, false)
     progressBar.setVisibility(View.INVISIBLE)
   }
 
