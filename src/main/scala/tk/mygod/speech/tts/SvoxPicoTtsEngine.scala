@@ -15,7 +15,7 @@ import android.speech.tts.{TextToSpeech, UtteranceProgressListener, Voice}
 import android.text.TextUtils
 import android.util.Log
 import tk.mygod.concurrent.StoppableFuture
-import tk.mygod.util.UriUtils._
+import tk.mygod.util.Conversions._
 import tk.mygod.util.{IOUtils, LocaleUtils}
 
 import scala.collection.JavaConversions._
@@ -76,7 +76,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
 
   //noinspection ScalaDeprecation
   private final class SpeakTask(private val currentText: CharSequence, private val startOffset: Int,
-                                finished: () => Unit = null) extends StoppableFuture(finished) {
+                                finished: Unit => Unit = null) extends StoppableFuture(finished) {
     def work: Unit = try {
       for (part <- new SpeechSplitter(currentText, startOffset, getMaxLength, true)) try {
         if (isStopped) {
@@ -108,7 +108,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
 
   private final class SynthesizeToStreamTask(private val currentText: CharSequence, private val startOffset: Int,
                                              private val output: FileOutputStream, private val cacheDir: File,
-                                             finished: () => Unit = null) extends StoppableFuture(finished) {
+                                             finished: Unit => Unit = null) extends StoppableFuture(finished) {
     private val mergeQueue = new LinkedBlockingDeque[SpeechPart]
     val synthesizeLock = new Semaphore(1)
 
@@ -383,13 +383,13 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
 
   def speak(text: CharSequence, startOffset: Int) {
     synthesizeToStreamTask = null
-    speakTask = new SpeakTask(text, startOffset, () => speakTask = null)
+    speakTask = new SpeakTask(text, startOffset, _ => speakTask = null)
   }
 
   def synthesizeToStream(text: CharSequence, startOffset: Int, output: FileOutputStream, cacheDir: File) {
     speakTask = null
     synthesizeToStreamTask = new SynthesizeToStreamTask(text, startOffset, output, cacheDir,
-      () => synthesizeToStreamTask = null)
+      _ => synthesizeToStreamTask = null)
   }
 
   def stop {

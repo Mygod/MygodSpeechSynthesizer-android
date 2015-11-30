@@ -11,7 +11,7 @@ import android.text.TextUtils
 import tk.mygod.concurrent.StoppableFuture
 import tk.mygod.speech.synthesizer.R
 import tk.mygod.util.IOUtils
-import tk.mygod.util.UriUtils._
+import tk.mygod.util.Conversions._
 
 import scala.collection.{immutable, mutable}
 
@@ -28,7 +28,7 @@ object GoogleTranslateTtsEngine {
 final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: TtsEngine => Any = null)
   extends TtsEngine(context, selfDestructionListener) {
   private final class SpeakTask(private val currentText: CharSequence, private val startOffset: Int,
-                                finished: () => Unit = null) extends StoppableFuture(finished) {
+                                finished: Unit => Unit = null) extends StoppableFuture(finished) {
     private val playbackQueue = new ArrayBlockingQueue[AnyRef](29)
     private val partMap = new mutable.HashMap[MediaPlayer, SpeechPart]
     private val manager = new PlayerManager
@@ -133,7 +133,7 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
   }
 
   private class SynthesizeToStreamTask(private val currentText: CharSequence, private val startOffset: Int,
-                                       private val output: OutputStream, finished: () => Unit = null)
+                                       private val output: OutputStream, finished: Unit => Unit = null)
     extends StoppableFuture(finished) {
     def work: Unit = try for (part <- new SpeechSplitter(currentText, startOffset)) {
       if (isStopped) return
@@ -196,12 +196,12 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
 
   def speak(text: CharSequence, startOffset: Int) {
     synthesizeToStreamTask = null
-    speakTask = new SpeakTask(text, startOffset, () => speakTask = null)
+    speakTask = new SpeakTask(text, startOffset, _ => speakTask = null)
   }
 
   def synthesizeToStream(text: CharSequence, startOffset: Int, output: FileOutputStream, cacheDir: File) {
     speakTask = null
-    synthesizeToStreamTask = new SynthesizeToStreamTask(text, startOffset, output, () => synthesizeToStreamTask = null)
+    synthesizeToStreamTask = new SynthesizeToStreamTask(text, startOffset, output, _ => synthesizeToStreamTask = null)
   }
 
   def stop {
