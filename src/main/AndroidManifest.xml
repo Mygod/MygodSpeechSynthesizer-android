@@ -28,11 +28,36 @@
             <intent-filter>
                 <action android:name="android.intent.action.EDIT" />
                 <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.OPENABLE" />
                 <data android:mimeType="application/ssml+xml" />
                 <data android:mimeType="text/plain" />
-                <data android:pathPattern="*.ssml"/>
-                <data android:pathPattern="*.txt"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.OPENABLE" />
+                <data android:scheme="http" android:host="*" android:mimeType="*/*" android:pathPattern="/.*\\.ssml"/>
+                <data android:pathPattern="/.*\\.txt"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.OPENABLE" />
+                <data android:scheme="https" android:host="*" android:mimeType="*/*" android:pathPattern="/.*\\.ssml"/>
+                <data android:pathPattern="/.*\\.txt"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.EDIT" />
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.OPENABLE" />
+                <data android:scheme="file" android:host="*" android:mimeType="*/*" android:pathPattern="/.*\\.ssml"/>
+                <data android:pathPattern="/.*\\.txt"/>
             </intent-filter>
         </activity>
 
