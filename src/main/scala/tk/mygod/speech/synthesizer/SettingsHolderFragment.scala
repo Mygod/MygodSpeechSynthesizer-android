@@ -2,13 +2,14 @@ package tk.mygod.speech.synthesizer
 
 import java.text.DecimalFormat
 
-import android.content.Intent
 import android.graphics.drawable.Drawable
-import android.os.{Build, Bundle}
+import android.os.Bundle
 import android.support.v7.preference.Preference
 import android.text.style.TextAppearanceSpan
 import android.text.{SpannableStringBuilder, Spanned, TextUtils}
+import tk.mygod.app.ActivityPlus
 import tk.mygod.concurrent.FailureHandler
+import tk.mygod.os.Build
 import tk.mygod.preference._
 import tk.mygod.speech.tts.{ConstantsWrapper, LocaleWrapper, TtsEngine}
 
@@ -27,13 +28,13 @@ final class SettingsHolderFragment extends PreferenceFragmentPlus {
     getPreferenceManager.setSharedPreferencesName("settings")
     addPreferencesFromResource(R.xml.settings)
     engine = findPreference("engine").asInstanceOf[IconListPreference]
-    engine.setOnPreferenceChangeListener((preference: Preference, newValue: Any) => {
+    engine.setOnPreferenceChangeListener((_, newValue) => {
       SynthesisService.instance.selectEngine(newValue.toString)
       updateVoices()
       true
     })
     voice = findPreference("engine.voice").asInstanceOf[IconListPreference]
-    voice.setOnPreferenceChangeListener((preference: Preference, newValue: Any) => {
+    voice.setOnPreferenceChangeListener((_, newValue) => {
       SynthesisService.instance.selectVoice(newValue.toString)
       voice.setSummary(SynthesisService.instance.engines.selectedEngine.getVoice.getDisplayName)
       true
@@ -58,17 +59,17 @@ final class SettingsHolderFragment extends PreferenceFragmentPlus {
         updateVoices()
       }
     }
-    findPreference("engine.showLegacyVoices").setOnPreferenceChangeListener((preference: Preference, newValue: Any) => {
+    findPreference("engine.showLegacyVoices").setOnPreferenceChangeListener((_, newValue) => {
       updateVoices(Some(newValue.asInstanceOf[Boolean]))
       true
     })
-    if (Build.VERSION.SDK_INT < 23)
-      findPreference("text.enableSsmlDroid").setOnPreferenceChangeListener((preference: Preference, newValue: Any) => {
+    if (Build.version < 23)
+      findPreference("text.enableSsmlDroid").setOnPreferenceChangeListener((_, newValue) => {
         App.mainFragment.styleItem.setVisible(newValue.asInstanceOf[Boolean])
         true
       })
-    findPreference("ssmlDroid.userGuidelines").setOnPreferenceClickListener((preference: Preference) => {
-      startActivity(new Intent(Intent.ACTION_VIEW, R.string.url_ssmldroid_user_guidelines))
+    findPreference("ssmlDroid.userGuidelines").setOnPreferenceClickListener(_ => {
+      getActivity.asInstanceOf[ActivityPlus].launchUrl(R.string.url_ssmldroid_user_guidelines)
       true
     })
   }
@@ -98,7 +99,7 @@ final class SettingsHolderFragment extends PreferenceFragmentPlus {
           for (feature <- features) feature match {
             case ConstantsWrapper.KEY_FEATURE_EMBEDDED_SYNTHESIS | ConstantsWrapper.KEY_FEATURE_NETWORK_SYNTHESIS |
                  ConstantsWrapper.KEY_FEATURE_NETWORK_RETRIES_COUNT | ConstantsWrapper.KEY_FEATURE_NETWORK_TIMEOUT_MS |
-                 ConstantsWrapper.KEY_FEATURE_LEGACY_SET_LANGUAGE_VOICE => ;
+                 ConstantsWrapper.KEY_FEATURE_LEGACY_SET_LANGUAGE_VOICE =>
             case ConstantsWrapper.KEY_FEATURE_NOT_INSTALLED =>
               builder.append(getText(R.string.settings_voice_information_not_installed))
             case _ =>

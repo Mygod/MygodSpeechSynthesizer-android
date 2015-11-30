@@ -8,7 +8,7 @@ import java.util.{Calendar, Date, Locale}
 import android.app.Activity
 import android.content._
 import android.net.{ParseException, Uri}
-import android.os.{Build, Bundle}
+import android.os.Bundle
 import android.support.design.widget.{FloatingActionButton, Snackbar}
 import android.support.v4.content.ContextCompat
 import android.support.v4.view.ViewPager
@@ -24,7 +24,9 @@ import android.widget.ProgressBar
 import android.widget.TextView.BufferType
 import tk.mygod.CurrentApp
 import tk.mygod.app.ToolbarFragment
+import tk.mygod.os.Build
 import tk.mygod.speech.synthesizer.MainFragment._
+import tk.mygod.speech.synthesizer.TypedResource._
 import tk.mygod.speech.tts.OnTtsSynthesisCallbackListener
 import tk.mygod.util.IOUtils
 import tk.mygod.widget.ViewPagerAdapter
@@ -50,15 +52,14 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
   private var fab: FloatingActionButton = _
   private var selectionStart: Int = _
   private var selectionEnd: Int = _
-  private lazy val inputMethodManager =
-    getActivity.getSystemService(Context.INPUT_METHOD_SERVICE).asInstanceOf[InputMethodManager]
+  private lazy val inputMethodManager = mainActivity.systemService[InputMethodManager]
   private lazy val highlightSpan =
-    new BackgroundColorSpan(ContextCompat.getColor(getActivity, R.color.material_purple_300_highlight))
+    new BackgroundColorSpan(ContextCompat.getColor(mainActivity, R.color.material_purple_300_highlight))
 
   private def formatDefaultText(pattern: String, buildTime: Date) = {
     val calendar = Calendar.getInstance
     calendar.setTime(buildTime)
-    String.format(pattern, CurrentApp.getVersionName(getActivity),
+    String.format(pattern, CurrentApp.getVersionName(mainActivity),
       DateFormat.getDateInstance(DateFormat.FULL).format(buildTime),
       DateFormat.getTimeInstance(DateFormat.FULL).format(buildTime), calendar.get(Calendar.YEAR): Integer,
       calendar.get(Calendar.MONTH): Integer, calendar.get(Calendar.DAY_OF_MONTH): Integer,
@@ -87,25 +88,24 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
     toolbar.inflateMenu(R.menu.main_fragment_actions)
     menu = toolbar.getMenu
     styleItem = menu.findItem(R.id.action_style)
-    styleItem.setVisible(Build.VERSION.SDK_INT < 23 && App.enableSsmlDroid)
+    styleItem.setVisible(Build.version < 23 && App.enableSsmlDroid)
     toolbar.setOnMenuItemClickListener(this)
-    progressBar = result.findViewById(R.id.progressBar).asInstanceOf[ProgressBar]
-    fab = result.findViewById(R.id.fab).asInstanceOf[FloatingActionButton]
-    fab.setOnClickListener((v: View) => SynthesisService.write(
-      if (SynthesisService.instance.status == SynthesisService.IDLE) {
-        try SynthesisService.instance.speak(getText, getStartOffset) catch {
-          case e: Exception =>
-            e.printStackTrace
-            showToast(String.format(R.string.synthesis_error, e.getLocalizedMessage))
-            SynthesisService.instance.stop
-        }
-      } else SynthesisService.instance.stop))
-    val buildTime = CurrentApp.getBuildTime(getActivity)
-    pager = result.findViewById(R.id.pager).asInstanceOf[ViewPager]
+    progressBar = result.findView(TR.progressBar)
+    fab = result.findView(TR.fab)
+    fab.setOnClickListener(_ => SynthesisService.write(if (SynthesisService.instance.status == SynthesisService.IDLE) {
+      try SynthesisService.instance.speak(getText, getStartOffset) catch {
+        case e: Exception =>
+          e.printStackTrace
+          showToast(String.format(R.string.synthesis_error, e.getLocalizedMessage))
+          SynthesisService.instance.stop
+      }
+    } else SynthesisService.instance.stop))
+    val buildTime = CurrentApp.getBuildTime(mainActivity)
+    pager = result.findView(TR.pager)
     pager.setAdapter(new ViewPagerAdapter(pager))
-    inputText = result.findViewById(R.id.input_text).asInstanceOf[AppCompatEditText]
-    textView = result.findViewById(R.id.text_view).asInstanceOf[AppCompatTextView]
-    if (Build.VERSION.SDK_INT >= 23) {
+    inputText = result.findView(TR.input_text)
+    textView = result.findView(TR.text_view)
+    if (Build.version >= 23) {
       val callback2 = new Callback2 {
         def onCreateActionMode(mode: ActionMode, menu: Menu) = {
           if (App.enableSsmlDroid) menu.add(0, R.id.action_style, Menu.CATEGORY_SECONDARY, R.string.action_style)
@@ -146,7 +146,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
 
   override def onCreateContextMenu(menu: ContextMenu, v: View, menuInfo: ContextMenu.ContextMenuInfo) {
     if (v != inputText) return
-    getActivity.getMenuInflater.inflate(R.menu.input_text_styles, menu)
+    mainActivity.getMenuInflater.inflate(R.menu.input_text_styles, menu)
     menu.setHeaderTitle(R.string.action_style)
   }
 
@@ -332,7 +332,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
         selectionStart = inputText.getSelectionStart
         selectionEnd = inputText.getSelectionEnd
         registerForContextMenu(inputText)
-        getActivity.openContextMenu(inputText)
+        mainActivity.openContextMenu(inputText)
         unregisterForContextMenu(inputText)
         true
       case R.id.action_synthesize_to_file =>
@@ -381,7 +381,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
     case SAVE_TEXT =>
       var output: OutputStream = null
       try {
-        output = getActivity.getContentResolver.openOutputStream(uri)
+        output = mainActivity.getContentResolver.openOutputStream(uri)
         output.write(inputText.getText.toString.getBytes)
       } catch {
         case e: IOException =>
@@ -405,8 +405,8 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
       if (resultCode == Activity.RESULT_OK) save(data.getData, requestCode)
     case OPEN_EARCON => if (resultCode == Activity.RESULT_OK) {
       val uri = data.getData
-      if (Build.VERSION.SDK_INT >= 19)
-        try getActivity.getContentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+      if (Build.version >= 19)
+        try mainActivity.getContentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         catch {
           case ignore: Exception =>
         }

@@ -22,10 +22,10 @@ object GoogleTranslateTtsEngine {
   private val voices = Array("af", "sq", "ar", "hy", "bs", "ca", "zh-CN", "zh-TW", "hr", "cs", "da", "nl", "en", "eo",
                              "fi", "fr", "de", "el", "ht", "hi", "hu", "is", "id", "it", "ja", "la", "lv", "mk", "no",
                              "pl", "pt", "ro", "ru", "sr", "sk", "es", "sw", "sv", "ta", "th", "tr", "vi", "cy")
-                         .map(lang => new LocaleWrapper(lang).asInstanceOf[TtsVoice]).to[immutable.SortedSet]
+                         .map(new LocaleWrapper(_).asInstanceOf[TtsVoice]).to[immutable.SortedSet]
 }
 
-final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: TtsEngine => Any = null)
+final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: TtsEngine => Unit = null)
   extends TtsEngine(context, selfDestructionListener) {
   private final class SpeakTask(private val currentText: CharSequence, private val startOffset: Int,
                                 finished: Unit => Unit = null) extends StoppableFuture(finished) {
@@ -50,7 +50,7 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
         if (player != null) player.stop
       }
 
-      def work = try {
+      def work: Unit = try {
         var obj = playbackQueue.take
         while (obj.isInstanceOf[MediaPlayer]) {
           player = obj.asInstanceOf[MediaPlayer]

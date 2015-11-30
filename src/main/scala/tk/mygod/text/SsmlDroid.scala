@@ -4,17 +4,19 @@ import java.io.StringReader
 import java.lang.reflect.Field
 import java.nio.CharBuffer
 
-import android.os.{Build, PersistableBundle}
+import android.os.PersistableBundle
 import android.text.style.TtsSpan
 import android.text.{Editable, SpannableStringBuilder, Spanned}
 import junit.framework.Assert
 import org.xml.sax._
 import org.xml.sax.helpers.{DefaultHandler, XMLReaderFactory}
+import tk.mygod.os.Build
 
 import scala.collection.mutable
 
 /**
  * SsmlDroid™.
+ *
  * @author Mygod
  */
 object SsmlDroid {
@@ -76,7 +78,7 @@ object SsmlDroid {
         treeStack.push(new SsmlDroid.Tag("earcon", new EarconSpan, Result.length))
         return
       }
-      if (Build.VERSION.SDK_INT < 21) {
+      if (Build.version < 21) {
         treeStack.push(new SsmlDroid.Tag(name))
         return
       }

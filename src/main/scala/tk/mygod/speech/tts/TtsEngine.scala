@@ -11,7 +11,7 @@ import scala.collection.immutable
  * @author Mygod
  */
 abstract class TtsEngine(protected var context: Context,
-                         private val selfDestructionListener: TtsEngine => Any = null) {
+                         private val selfDestructionListener: TtsEngine => Unit = null) {
   def getVoices: immutable.SortedSet[TtsVoice]
   def getVoice: TtsVoice
   def setVoice(voice: TtsVoice): Boolean

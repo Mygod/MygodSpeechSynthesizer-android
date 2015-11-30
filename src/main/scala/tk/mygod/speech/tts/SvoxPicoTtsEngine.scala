@@ -9,12 +9,13 @@ import java.util.concurrent.{LinkedBlockingDeque, Semaphore}
 import android.annotation.TargetApi
 import android.content.Context
 import android.net.Uri
-import android.os.{Build, Bundle}
+import android.os.Bundle
 import android.speech.tts.TextToSpeech.{EngineInfo, OnInitListener}
 import android.speech.tts.{TextToSpeech, UtteranceProgressListener, Voice}
 import android.text.TextUtils
 import android.util.Log
 import tk.mygod.concurrent.StoppableFuture
+import tk.mygod.os.Build
 import tk.mygod.util.Conversions._
 import tk.mygod.util.{IOUtils, LocaleUtils}
 
@@ -41,9 +42,9 @@ object SvoxPicoTtsEngine {
 }
 
 final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
-                              selfDestructionListener: TtsEngine => Any = null)
+                              selfDestructionListener: TtsEngine => Unit = null)
   extends TtsEngine(context, selfDestructionListener) with OnInitListener {
-  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  @TargetApi(21)
   private final class VoiceWrapper(var voice: Voice) extends TtsVoice {
     def getFeatures = voice.getFeatures
     def getLatency = voice.getLatency
@@ -55,7 +56,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
     override def toString = voice.getName
   }
 
-  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  @TargetApi(21)
   private def wrap(voice: Voice) = if (voice == null) null else new VoiceWrapper(voice)
 
   //noinspection ScalaDeprecation
@@ -88,9 +89,9 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
         if (part.isEarcon) {
           val uri = cs.toString
           tts.synchronized(SvoxPicoTtsEngine.earcons.get(tts).asInstanceOf[util.HashMap[String, Uri]].put(uri, uri))
-          if (Build.VERSION.SDK_INT >= 21) tts.playEarcon(uri, TextToSpeech.QUEUE_ADD, getParamsL(id), id)
+          if (Build.version >= 21) tts.playEarcon(uri, TextToSpeech.QUEUE_ADD, getParamsL(id), id)
           else tts.playEarcon(uri, TextToSpeech.QUEUE_ADD, getParams(id))
-        } else if (Build.VERSION.SDK_INT >= 21) tts.speak(cs, TextToSpeech.QUEUE_ADD, getParamsL(id), id)
+        } else if (Build.version >= 21) tts.speak(cs, TextToSpeech.QUEUE_ADD, getParamsL(id), id)
         else tts.speak(cs.toString, TextToSpeech.QUEUE_ADD, getParams(id))
         if (listener != null) listener.onTtsSynthesisPrepared(part.end)
       } catch {
@@ -102,7 +103,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
       case e: Exception =>
         e.printStackTrace
         if (listener != null) listener.onTtsSynthesisError(0, currentText.length)
-    } finally if (Build.VERSION.SDK_INT >= 21) tts.speak("", TextToSpeech.QUEUE_ADD, getParamsL(""), "")
+    } finally if (Build.version >= 21) tts.speak("", TextToSpeech.QUEUE_ADD, getParamsL(""), "")
     else tts.speak("", TextToSpeech.QUEUE_ADD, getParams("")) // stop sign
   }
 
@@ -180,7 +181,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
             val cs = currentText.subSequence(part.start, part.end)
             val id = part.toString
             //noinspection ScalaDeprecation
-            if (Build.VERSION.SDK_INT >= 21) tts.synthesizeToFile(cs, getParamsL(id), part.file, id)
+            if (Build.version >= 21) tts.synthesizeToFile(cs, getParamsL(id), part.file, id)
             else tts.synthesizeToFile(cs.toString, getParams(id), part.file.getAbsolutePath)
             synthesizeLock.acquireUninterruptibly
             synthesizeLock.release  // wait for synthesis
@@ -204,7 +205,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
   private[tts] var engineInfo: TextToSpeech.EngineInfo = _
   private var voices: immutable.SortedSet[TtsVoice] = _
   private var preInitSetVoice: String = _
-  private var useNativeVoice = Build.VERSION.SDK_INT >= 21
+  private var useNativeVoice = Build.version >= 21
   private var speakTask: SpeakTask = null
   private var synthesizeToStreamTask: SynthesizeToStreamTask = null
 
@@ -258,13 +259,13 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
     else if (useNativeVoice) {
       val voice = tts.getDefaultVoice
       if (voice != null) tts.setVoice(voice)
-    } else setVoice(new LocaleVoice(if (Build.VERSION.SDK_INT >= 18) tts.getDefaultLanguage
+    } else setVoice(new LocaleVoice(if (Build.version >= 18) tts.getDefaultLanguage
     else context.getResources.getConfiguration.locale))
   }
 
   private def initVoices {
     if (useNativeVoice) try {
-      voices = tts.getVoices.map(v => wrap(v).asInstanceOf[TtsVoice]).to[immutable.SortedSet]
+      voices = tts.getVoices.map(wrap(_).asInstanceOf[TtsVoice]).to[immutable.SortedSet]
       return
     } catch {
       case exc: RuntimeException =>
@@ -352,9 +353,9 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
   override def getName = engineInfo.label
   protected def getIconInternal = context.getPackageManager.getDrawable(engineInfo.name, engineInfo.icon, null)
   def getMimeType = "audio/x-wav"
-  def getMaxLength = if (Build.VERSION.SDK_INT >= 18) TextToSpeech.getMaxSpeechInputLength else 4000
+  def getMaxLength = if (Build.version >= 18) TextToSpeech.getMaxSpeechInputLength else 4000
 
-  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  @TargetApi(21)
   private def getParamsL(id: String) = {
     val params = new Bundle
     val voice = getVoice
