@@ -100,6 +100,8 @@
     </string>
     <string name="settings_show_legacy_voices">显示传统声音</string>
     <string name="settings_show_legacy_voices_summary">显示为 4.x 及更低版本用户设计的声音。</string>
-        <string name="settings_pitch_summary">%d (正常为 100)</string>
-        <string name="settings_speech_rate_summary">%d (正常为 100)</string>
+    <string name="settings_pitch_summary">%d (正常为 100)</string>
+    <string name="settings_speech_rate_summary">%d (正常为 100)</string>
+
+    <string name="read_file_storage_denied">无法在没有存储空间权限的情况下读取文件内容。请授权或使用其他方式打开文件。</string>
 </resources>

@@ -123,4 +123,7 @@
         https://github.com/Mygod/MygodSpeechSynthesizer/wiki/SsmlDroid™-User-Guidelines
     </string>
 
+    <string name="read_file_storage_denied">Unable to read file content without Storage permission. Please grant the
+        permission or use other methods to open the file.</string>
+
 </resources>
