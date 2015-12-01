@@ -42,9 +42,6 @@
     <string name="settings_show_ticker">Enable text scrolling</string>
     <string name="settings_show_ticker_summary">Scroll text that is being spoken on the status bar. (Some 5.0+ system
         might not support it)</string>
-    <string name="settings_old_timey_save_ui">Old-timey save user interface</string>
-    <string name="settings_old_timey_save_ui_summary">Use old-timey save user interface instead of the fancy Storage
-        Access Framework in 4.4+.</string>
 
     <string name="action_tts_cardinal">Cardinal</string>
     <string name="action_tts_date">Date</string>

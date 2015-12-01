@@ -44,10 +44,5 @@
         <android.support.v14.preference.SwitchPreference android:key="appearance.ticker"
                                                          android:title="@string/settings_show_ticker"
                                                          android:summary="@string/settings_show_ticker_summary"/>
-        <android.support.v14.preference.SwitchPreference android:key="appearance.oldTimeySaveUI"
-                                                         android:title="@string/settings_old_timey_save_ui"
-                                                         android:summary="@string/settings_old_timey_save_ui_summary"
-                                                         android:enabled="@bool/kitkat"
-                                                         android:defaultValue="@bool/not_kitkat"/>
     </android.support.v7.preference.PreferenceCategory>
 </android.support.v7.preference.PreferenceScreen>

@@ -5,7 +5,6 @@ import java.util.Date
 
 import android.app.Application
 import android.content.{Context, SharedPreferences}
-import tk.mygod.os.Build
 
 object App {
   var pref: SharedPreferences = _
@@ -15,7 +14,6 @@ object App {
   def enableSsmlDroid = pref.getBoolean("text.enableSsmlDroid", false)
   def enableSsmlDroid(value: Boolean) = pref.edit.putBoolean("text.enableSsmlDroid", value).apply
   def ignoreSingleLineBreak = pref.getBoolean("text.ignoreSingleLineBreak", false)
-  def oldTimeySaveUI = Build.version < 19 || pref.getBoolean("appearance.oldTimeySaveUI", false)
   def lastSaveDir = pref.getString("fileSystem.lastSaveDir", null)
 
   var displayName: String = _

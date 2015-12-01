@@ -113,7 +113,7 @@ final class MainActivity extends FragmentStackActivity with LocationObservedActi
     push(settingsFragment)
   }
 
-  def showSave(mimeType: String, fileName: String, requestCode: Int) = if (App.oldTimeySaveUI) {
+  def showSave(mimeType: String, fileName: String, requestCode: Int) = if (Build.version < 19) {
       val fragment = new SaveFileFragment(requestCode, mimeType, App.lastSaveDir, fileName)
       fragment.setSpawnLocation(getLocationOnScreen)
       push(fragment)
