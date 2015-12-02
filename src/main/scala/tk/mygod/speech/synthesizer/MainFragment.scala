@@ -18,7 +18,6 @@ import android.text.style.BackgroundColorSpan
 import android.view.ActionMode.Callback2
 import android.view._
 import android.view.inputmethod.InputMethodManager
-import android.webkit.MimeTypeMap
 import android.widget.ProgressBar
 import android.widget.TextView.BufferType
 import tk.mygod.CurrentApp
@@ -27,7 +26,7 @@ import tk.mygod.os.Build
 import tk.mygod.speech.synthesizer.MainFragment._
 import tk.mygod.speech.synthesizer.TypedResource._
 import tk.mygod.speech.tts.OnTtsSynthesisCallbackListener
-import tk.mygod.util.IOUtils
+import tk.mygod.util.{IOUtils, MimeUtils}
 import tk.mygod.view.ViewPager
 
 /**
@@ -337,7 +336,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
         SynthesisService.read {
           val mime = SynthesisService.instance.engines.selectedEngine.getMimeType
           runOnUiThread(mainActivity.showSave(mime, App.getSaveFileName + '.' +
-            MimeTypeMap.getSingleton.getExtensionFromMimeType(mime), SAVE_SYNTHESIS))
+            MimeUtils.getExtension(mime), SAVE_SYNTHESIS))
         }
         true
       case R.id.action_open =>

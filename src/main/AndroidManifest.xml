@@ -58,5 +58,7 @@
                 <action android:name="tk.mygod.speech.synthesizer.action.STOP" />
             </intent-filter>
         </receiver>
+        <provider android:authorities="tk.mygod.speech.tts.provider" android:exported="false"
+                  android:name="tk.mygod.speech.tts.EarconsProvider" android:grantUriPermissions="true"/>
     </application>
 </manifest>

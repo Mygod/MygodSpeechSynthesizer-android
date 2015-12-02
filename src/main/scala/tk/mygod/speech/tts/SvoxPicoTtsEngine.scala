@@ -7,7 +7,7 @@ import java.util.Locale
 import java.util.concurrent.{LinkedBlockingDeque, Semaphore}
 
 import android.annotation.TargetApi
-import android.content.Context
+import android.content.{Intent, Context}
 import android.net.Uri
 import android.os.Bundle
 import android.speech.tts.TextToSpeech.{EngineInfo, OnInitListener}
@@ -23,6 +23,7 @@ import scala.collection.JavaConversions._
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.util.control.Breaks._
 
 /**
  * @author Mygod
@@ -91,10 +92,14 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
         val cs = currentText.subSequence(part.start, part.end)
         val id = part.toString
         if (part.isEarcon) {
-          val uri = cs.toString
-          tts.synchronized(earcons.get(tts).asInstanceOf[util.HashMap[String, Uri]].put(uri, uri))
-          if (Build.version >= 21) tts.playEarcon(uri, TextToSpeech.QUEUE_ADD, getParamsL(id), id)
-          else tts.playEarcon(uri, TextToSpeech.QUEUE_ADD, getParams(id))
+          val hash = EarconsProvider.addUri(cs)
+          val earcon = hash.toString
+          val uri = EarconsProvider.getUri(hash)
+          context.grantUriPermission(engineInfo.name, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+          tts.synchronized(earcons.get(tts).asInstanceOf[util.HashMap[String, Uri]]
+            .put(earcon, uri))
+          if (Build.version >= 21) tts.playEarcon(earcon, TextToSpeech.QUEUE_ADD, getParamsL(id), id)
+          else tts.playEarcon(earcon, TextToSpeech.QUEUE_ADD, getParams(id))
         } else if (Build.version >= 21) tts.speak(cs, TextToSpeech.QUEUE_ADD, getParamsL(id), id)
         else tts.speak(cs.toString, TextToSpeech.QUEUE_ADD, getParams(id))
         if (listener != null) listener.onTtsSynthesisPrepared(part.end)
@@ -117,14 +122,14 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
     private val mergeQueue = new LinkedBlockingDeque[SpeechPart]
     val synthesizeLock = new Semaphore(1)
 
-    def merger: Unit = try {
+    Future(breakable(try {
       var header: Array[Byte] = null
       var length = 0L
       var part = mergeQueue.take
       while (part.start >= 0) {
         var input: InputStream = null
         try {
-          if (isStopped) return
+          if (isStopped) break
           if (listener != null) listener.onTtsSynthesisCallback(part.start, part.end)
           input = if (part.isEarcon)
             context.getContentResolver.openInputStream(currentText.subSequence(part.start, part.end))
@@ -171,37 +176,34 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
       }
       if (listener != null) listener.onTtsSynthesisFinished
       synthesizeToStreamTask = null
-    }
+    }))
 
-    def work {
-      Future(merger)
-      try {
+    def work: Unit = try {
+      if (isStopped) return
+      for (part <- new SpeechSplitter(currentText, startOffset, getMaxLength)) {
         if (isStopped) return
-        for (part <- new SpeechSplitter(currentText, startOffset, getMaxLength)) {
-          if (isStopped) return
-          if (!part.isEarcon) try {
-            part.file = File.createTempFile("TEMP", ".wav", cacheDir)
-            synthesizeLock.acquireUninterruptibly
-            val cs = currentText.subSequence(part.start, part.end)
-            val id = part.toString
-            //noinspection ScalaDeprecation
-            if (Build.version >= 21) tts.synthesizeToFile(cs, getParamsL(id), part.file, id)
-            else tts.synthesizeToFile(cs.toString, getParams(id), part.file.getAbsolutePath)
-            synthesizeLock.acquireUninterruptibly
-            synthesizeLock.release  // wait for synthesis
-          } catch {
-            case e: Exception =>
-              e.printStackTrace
-              if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
-          }
-          mergeQueue.add(part)
+        if (!part.isEarcon) try {
+          part.file = File.createTempFile("TEMP", ".wav", cacheDir)
+          synthesizeLock.acquireUninterruptibly
+          val cs = currentText.subSequence(part.start, part.end)
+          val id = part.toString
+          //noinspection ScalaDeprecation
+          if (Build.version >= 21) tts.synthesizeToFile(cs, getParamsL(id), part.file, id)
+          else tts.synthesizeToFile(cs.toString, getParams(id), part.file.getAbsolutePath)
+          synthesizeLock.acquireUninterruptibly
+          synthesizeLock.release  // wait for synthesis
+        } catch {
+          case e: Exception =>
+            e.printStackTrace
+            if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
         }
-      } catch {
-        case e: Exception =>
-          e.printStackTrace
-          if (listener != null) listener.onTtsSynthesisError(0, currentText.length)
-      } finally mergeQueue.add(new SpeechPart)  // stop sign
-    }
+        mergeQueue.add(part)
+      }
+    } catch {
+      case e: Exception =>
+        e.printStackTrace
+        if (listener != null) listener.onTtsSynthesisError(0, currentText.length)
+    } finally mergeQueue.add(new SpeechPart)  // stop sign
   }
 
   private val initLock = new Semaphore(1)
