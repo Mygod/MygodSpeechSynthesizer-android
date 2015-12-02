@@ -341,7 +341,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
         true
       case R.id.action_open =>
         try startActivityForResult(new Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE)
-          .setType(mime), OPEN_TEXT)
+          .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION).setType(mime), OPEN_TEXT)
         catch {
           case e: ActivityNotFoundException => showToast(R.string.open_error_no_browser)
         }
