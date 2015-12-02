@@ -11,7 +11,6 @@ import android.net.{ParseException, Uri}
 import android.os.Bundle
 import android.support.design.widget.{FloatingActionButton, Snackbar}
 import android.support.v4.content.ContextCompat
-import android.support.v4.view.ViewPager
 import android.support.v7.widget.Toolbar.OnMenuItemClickListener
 import android.support.v7.widget.{AppCompatEditText, AppCompatTextView}
 import android.text.Spanned
@@ -29,7 +28,7 @@ import tk.mygod.speech.synthesizer.MainFragment._
 import tk.mygod.speech.synthesizer.TypedResource._
 import tk.mygod.speech.tts.OnTtsSynthesisCallbackListener
 import tk.mygod.util.IOUtils
-import tk.mygod.widget.ViewPagerAdapter
+import tk.mygod.view.ViewPager
 
 /**
  * @author Mygod
@@ -102,7 +101,6 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
     } else SynthesisService.instance.stop))
     val buildTime = CurrentApp.getBuildTime(mainActivity)
     pager = result.findView(TR.pager)
-    pager.setAdapter(new ViewPagerAdapter(pager))
     inputText = result.findView(TR.input_text)
     textView = result.findView(TR.text_view)
     if (Build.version >= 23) {
