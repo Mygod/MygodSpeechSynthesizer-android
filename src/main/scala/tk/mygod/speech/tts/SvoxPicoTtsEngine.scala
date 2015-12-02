@@ -28,6 +28,8 @@ import scala.concurrent.Future
  * @author Mygod
  */
 object SvoxPicoTtsEngine {
+  private val TAG = "SvoxPicoTtsEngine"
+
   private var earcons: Field = _
   private var startLock: Field = _
   try {
@@ -44,6 +46,8 @@ object SvoxPicoTtsEngine {
 final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
                               selfDestructionListener: TtsEngine => Unit = null)
   extends TtsEngine(context, selfDestructionListener) with OnInitListener {
+  import SvoxPicoTtsEngine._
+
   @TargetApi(21)
   private final class VoiceWrapper(var voice: Voice) extends TtsVoice {
     def getFeatures = voice.getFeatures
@@ -88,7 +92,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
         val id = part.toString
         if (part.isEarcon) {
           val uri = cs.toString
-          tts.synchronized(SvoxPicoTtsEngine.earcons.get(tts).asInstanceOf[util.HashMap[String, Uri]].put(uri, uri))
+          tts.synchronized(earcons.get(tts).asInstanceOf[util.HashMap[String, Uri]].put(uri, uri))
           if (Build.version >= 21) tts.playEarcon(uri, TextToSpeech.QUEUE_ADD, getParamsL(id), id)
           else tts.playEarcon(uri, TextToSpeech.QUEUE_ADD, getParams(id))
         } else if (Build.version >= 21) tts.speak(cs, TextToSpeech.QUEUE_ADD, getParamsL(id), id)
@@ -247,7 +251,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
   })
 
   def onInit(status: Int) = if (status != TextToSpeech.SUCCESS) {
-    Log.e("tk.mygod.speech.tts.SvoxPicoTtsEngine", "TextToSpeech init failed: " + status)
+    Log.e(TAG, "TextToSpeech init failed: " + status)
     initLock.release
     if (selfDestructionListener != null) selfDestructionListener(this)
     onDestroy
@@ -271,7 +275,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
       case exc: RuntimeException =>
         useNativeVoice = false
         exc.printStackTrace
-        Log.e("SvoxPicoTtsEngine", "Voices not supported: " + engineInfo.name)
+        Log.e(TAG, "Voices not supported: " + engineInfo.name)
     }
     try voices = Locale.getAvailableLocales
       .filter(l => try tts.isLanguageAvailable(l) != TextToSpeech.LANG_NOT_SUPPORTED

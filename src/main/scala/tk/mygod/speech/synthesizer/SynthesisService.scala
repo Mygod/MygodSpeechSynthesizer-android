@@ -6,7 +6,7 @@ import java.util.concurrent.Semaphore
 import android.app.{NotificationManager, Service}
 import android.content.Intent
 import android.net.Uri
-import android.os.{ParcelFileDescriptor, PowerManager}
+import android.os.{Handler, ParcelFileDescriptor, PowerManager}
 import android.support.annotation.IntDef
 import android.support.v4.app.NotificationCompat
 import android.support.v4.content.ContextCompat
@@ -14,6 +14,7 @@ import tk.mygod.concurrent.FailureHandler
 import tk.mygod.content.ContextPlus
 import tk.mygod.speech.tts.{AvailableTtsEngines, OnTtsSynthesisCallbackListener, TtsEngine}
 import tk.mygod.text.{SsmlDroid, TextMappings}
+import tk.mygod.util.Conversions._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -55,6 +56,7 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
   var prepared: Int = -1
   var currentStart: Int = -1
   var currentEnd: Int = -1
+  private val handler = new Handler
 
   private var _inBackground: Boolean = _
   def inBackground = _inBackground
@@ -190,7 +192,7 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
       end = SynthesisService.instance.mappings.getSourceOffset(end, true)
     }
     if (end < start) end = start
-    if (start < end) showToast(String.format(R.string.synthesis_error, rawText.substring(start, end)))
+    if (start < end) handler.post(showToast(String.format(R.string.synthesis_error, rawText.substring(start, end))))
     if (App.mainFragment != null) App.mainFragment.onTtsSynthesisError(start, end)
   }
   override def onTtsSynthesisFinished {

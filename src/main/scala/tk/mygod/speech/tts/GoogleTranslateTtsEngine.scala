@@ -28,7 +28,7 @@ object GoogleTranslateTtsEngine {
 final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: TtsEngine => Unit = null)
   extends TtsEngine(context, selfDestructionListener) {
   private final class SpeakTask(private val currentText: CharSequence, private val startOffset: Int,
-                                finished: Unit => Unit = null) extends StoppableFuture(finished) {
+                                finished: Unit => Unit = null) extends StoppableFuture {
     private val playbackQueue = new ArrayBlockingQueue[AnyRef](29)
     private val partMap = new mutable.HashMap[MediaPlayer, SpeechPart]
     private val manager = new PlayerManager
@@ -39,7 +39,7 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
       manager.stop
     }
 
-    private class PlayerManager extends StoppableFuture
+    private class PlayerManager extends StoppableFuture(finished)
       with MediaPlayer.OnCompletionListener with MediaPlayer.OnErrorListener {
       var player: MediaPlayer = _
       private final val playLock = new Semaphore(1)
@@ -105,7 +105,7 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
             player = new MediaPlayer
             player.setAudioStreamType(AudioManager.STREAM_MUSIC)
             val str = currentText.subSequence(part.start, part.end).toString
-            player.setDataSource(if (part.isEarcon) str else getUrl(str))
+            player.setDataSource(context, if (part.isEarcon) str else getUrl(str))
             player.prepare
             failed = false
           } catch {

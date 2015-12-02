@@ -8,6 +8,7 @@ import scala.collection.mutable.ArrayBuffer
  */
 class TextMappings {
   private val mappings = new ArrayBuffer[TextMapping]
+  addMapping(0, 0)
 
   /**
    * Add a mapping between two offsets.
@@ -18,7 +19,10 @@ class TextMappings {
     val size = mappings.size
     if (size > 0) {
       val last = mappings(size - 1)
-      if (source == last.sourceOffset && target == last.targetOffset) return
+      if (source == last.sourceOffset) {
+        last.targetOffset = target
+        return
+      }
     }
     mappings.append(new TextMapping(source, target))
   }

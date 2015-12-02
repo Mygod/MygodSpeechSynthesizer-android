@@ -16,6 +16,7 @@ object SpeechSplitter {
 
 /**
  * The lazy speech splitter.
+ *
  * @author Mygod
  * @param text The text to split. Spanned is supported.
  * @param i Start offset.

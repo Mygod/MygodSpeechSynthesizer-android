@@ -314,12 +314,12 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
   override def onContextItemSelected(item: MenuItem): Boolean = {
     val source = inputText.getText
     val selection = source.subSequence(selectionStart, selectionEnd)
-    if (item.getItemId == R.id.action_tts_earcon && selection.length == 0) {
-      val intent = new Intent(Intent.ACTION_GET_CONTENT)
-      intent.addCategory(Intent.CATEGORY_OPENABLE)
-      intent.setType("audio/*")
-      startActivityForResult(intent, MainFragment.OPEN_EARCON)
-    } else if (processTag(item.getItemId | item.getGroupId, source, selection, item.getTitleCondensed))
+    val id = item.getItemId
+    if (id == R.id.action_tts_earcon && selection.length == 0) startActivityForResult(
+      new Intent(if (Build.version >= 19) Intent.ACTION_OPEN_DOCUMENT else Intent.ACTION_GET_CONTENT)
+        .addCategory(Intent.CATEGORY_OPENABLE).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        .addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION).setType("audio/*"), MainFragment.OPEN_EARCON)
+    else if (processTag(id | item.getGroupId, source, selection, item.getTitleCondensed))
       return super.onContextItemSelected(item)
     true
   }
@@ -406,9 +406,9 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
     case OPEN_EARCON => if (resultCode == Activity.RESULT_OK) {
       val uri = data.getData
       if (Build.version >= 19)
-        try mainActivity.getContentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        catch {
-          case ignore: Exception =>
+        try mainActivity.getContentResolver.takePersistableUriPermission(uri,
+          data.getFlags & Intent.FLAG_GRANT_READ_URI_PERMISSION) catch {
+          case e: Exception => e.printStackTrace
         }
       processTag(R.id.action_tts_earcon, inputText.getText, uri.toString)
     } else processTag(R.id.action_tts_earcon, inputText.getText)
