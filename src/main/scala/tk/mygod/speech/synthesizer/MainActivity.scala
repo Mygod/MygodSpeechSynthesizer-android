@@ -29,7 +29,7 @@ final class MainActivity extends FragmentStackActivity with LocationObservedActi
   with OnRequestPermissionsResultCallback {
   import MainActivity._
 
-  private lazy val serviceIntent = intentService[SynthesisService]
+  private lazy val serviceIntent = intent[SynthesisService]
   var settingsFragment: SettingsFragment = _
   private var pendingUri: Uri = _
 
