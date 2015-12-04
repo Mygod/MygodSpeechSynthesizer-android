@@ -6,7 +6,7 @@ import java.util.concurrent.Semaphore
 import android.app.{NotificationManager, Service}
 import android.content.Intent
 import android.net.Uri
-import android.os.{Handler, ParcelFileDescriptor, PowerManager}
+import android.os.{Handler, ParcelFileDescriptor}
 import android.support.annotation.IntDef
 import android.support.v4.app.NotificationCompat
 import android.support.v4.content.ContextCompat
@@ -51,7 +51,6 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
   private var rawText: String = _
   private var lastText: String = _
   private lazy val notificationManager = systemService[NotificationManager]
-  private var wakeLock: PowerManager#WakeLock = _
   var textLength: Int = _
   var prepared: Int = -1
   var currentStart: Int = -1
@@ -70,8 +69,6 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
   var status: Int = _
 
   override def onCreate {
-    wakeLock = systemService[PowerManager].newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SynthesisService")
-    wakeLock.acquire
     super.onCreate
     val engineID = App.pref.getString("engine", "")
     engines = new AvailableTtsEngines(this)
@@ -88,7 +85,7 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
 
   override def onStartCommand(intent: Intent, flags: Int, startId: Int) = {
     if (intent != null && intent.getBooleanExtra("stop", false)) stop
-    Service.START_STICKY
+    Service.START_NOT_STICKY
   }
 
   override def onDestroy {
@@ -96,7 +93,6 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
     super.onDestroy
     SynthesisService._instance = null
     SynthesisService.initLock.acquireUninterruptibly
-    wakeLock.release
   }
 
   private def showNotification(text: CharSequence = null) = if (status == SynthesisService.IDLE) lastText = null else {
