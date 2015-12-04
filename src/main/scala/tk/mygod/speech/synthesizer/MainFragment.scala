@@ -71,13 +71,13 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
   override def onAttach(activity: Activity) {
     super.onAttach(activity)
     mainActivity = activity.asInstanceOf[MainActivity]
-    if (App.mainFragment != null) throw new RuntimeException("MainFragment is being attached twice!")
-    App.mainFragment = this
+    if (mainFragment != null) throw new RuntimeException("MainFragment is being attached twice!")
+    mainFragment = this
   }
   override def onDetach {
     super.onDetach
     mainActivity = null
-    App.mainFragment = null
+    mainFragment = null
   }
 
   override def onCreateView(inflater: LayoutInflater, container: ViewGroup, savedInstanceState: Bundle) = {
@@ -86,7 +86,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
     toolbar.inflateMenu(R.menu.main_fragment_actions)
     menu = toolbar.getMenu
     styleItem = menu.findItem(R.id.action_style)
-    styleItem.setVisible(Build.version < 23 && App.enableSsmlDroid)
+    styleItem.setVisible(Build.version < 23 && enableSsmlDroid)
     toolbar.setOnMenuItemClickListener(this)
     progressBar = result.findView(TR.progressBar)
     fab = result.findView(TR.fab)
@@ -105,7 +105,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
     if (Build.version >= 23) {
       val callback2 = new Callback2 {
         def onCreateActionMode(mode: ActionMode, menu: Menu) = {
-          if (App.enableSsmlDroid) menu.add(0, R.id.action_style, Menu.CATEGORY_SECONDARY, R.string.action_style)
+          if (enableSsmlDroid) menu.add(0, R.id.action_style, Menu.CATEGORY_SECONDARY, R.string.action_style)
           true
         }
         def onDestroyActionMode(mode: ActionMode) = ()
@@ -116,7 +116,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
       inputText.setCustomSelectionActionModeCallback(callback2)
     }
     var failed = true
-    if (App.enableSsmlDroid) try {
+    if (enableSsmlDroid) try {
       inputText.setText(formatDefaultText(IOUtils.readAllText(getResources.openRawResource(R.raw.input_text_default)),
         buildTime))
       failed = false
@@ -322,7 +322,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
   }
 
   def onMenuItemClick(item: MenuItem) = {
-    val ssml = App.enableSsmlDroid
+    val ssml = enableSsmlDroid
     val mime = if (ssml) "application/ssml+xml" else "text/plain"
     item.getItemId match {
       case R.id.action_style =>
@@ -335,7 +335,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
       case R.id.action_synthesize_to_file =>
         SynthesisService.read {
           val mime = SynthesisService.instance.engines.selectedEngine.getMimeType
-          runOnUiThread(mainActivity.showSave(mime, App.getSaveFileName + '.' +
+          runOnUiThread(mainActivity.showSave(mime, getSaveFileName + '.' +
             MimeUtils.getExtension(mime), SAVE_SYNTHESIS))
         }
         true
@@ -348,7 +348,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
         true
       case R.id.action_save =>
         val extension = if (ssml) ".ssml" else ".txt"
-        var fileName = App.getSaveFileName
+        var fileName = getSaveFileName
         if (!fileName.toLowerCase.endsWith(extension)) fileName += extension
         mainActivity.showSave(mime, fileName, SAVE_TEXT)
         true
@@ -360,7 +360,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
   }
 
   private def getStartOffset = {
-    val start = App.pref.getString("text.start", "beginning")
+    val start = pref.getString("text.start", "beginning")
     val raw = if ("selection_start" == start) inputText.getSelectionStart
     else if ("selection_end" == start) inputText.getSelectionEnd else 0
     if (SynthesisService.instance.mappings == null) raw else SynthesisService.instance.mappings.getTargetOffset(raw)

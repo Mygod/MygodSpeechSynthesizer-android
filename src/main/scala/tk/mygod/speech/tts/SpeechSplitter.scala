@@ -6,11 +6,11 @@ import android.text.Spanned
 import tk.mygod.text.EarconSpan
 
 object SpeechSplitter {
-  private final val BEST_SPLITTERS_EVER = 0
-  private final val SPACE_FOR_THE_BEST = 1
-  private final val NOT_SPLITTER = 6
-  private final val splitters = Array("!。？！…", ".?", ":;：；—", ",()[]{}，（）【】『』［］｛｝、",
-    "'\"‘’“”＇＂<>＜＞《》", " \t\b\n\r\f\r\u000b\u001c\u001d\u001e\u001f\u00a0\u2028\u2029/\\|-／＼｜－")
+  private val BEST_SPLITTERS_EVER = 0
+  private val SPACE_FOR_THE_BEST = 1
+  private val NOT_SPLITTER = 6
+  private val splitters = Array("!。？！…", ".?", ":;：；—", ",()[]{}，（）【】『』［］｛｝、", "'\"‘’“”＇＂<>＜＞《》",
+    " \t\b\n\r\f\r\u000b\u001c\u001d\u001e\u001f\u00a0\u2028\u2029/\\|-／＼｜－")
     .zipWithIndex.flatMap { case (s, i) => s.toCharArray.map(c => (c, i)) }.toMap
 }
 
@@ -26,6 +26,7 @@ object SpeechSplitter {
  */
 final class SpeechSplitter(private val text: CharSequence, private var i: Int, private val maxLength: Int = 100,
                            private val aggressiveMode: Boolean = false) extends Iterator[SpeechPart] {
+  import SpeechSplitter._
   if (maxLength <= 0) throw new InvalidParameterException("maxLength should be a positive value.")
   private val len = text.length
   private var earconParts = text match {
@@ -42,8 +43,8 @@ final class SpeechSplitter(private val text: CharSequence, private var i: Int, p
     var start = -1
     var end = -1
     var maxEnd = -1
-    var bestPriority = SpeechSplitter.NOT_SPLITTER
-    var priority = SpeechSplitter.NOT_SPLITTER
+    var bestPriority = NOT_SPLITTER
+    var priority = NOT_SPLITTER
     while (i < len) if (start < 0) if (i == nextEarcon) {
       part = earconParts.head
       i = part.end
@@ -51,7 +52,7 @@ final class SpeechSplitter(private val text: CharSequence, private var i: Int, p
       nextEarcon = if (earconParts.isEmpty) len else earconParts.head.start
       return
     } else {
-      if (!SpeechSplitter.splitters.contains(text.charAt(i))) {
+      if (!splitters.contains(text.charAt(i))) {
         start = i
         end = i
         maxEnd = i + maxLength
@@ -60,16 +61,15 @@ final class SpeechSplitter(private val text: CharSequence, private var i: Int, p
       i += 1
     } else if (i < maxEnd) {
       var next = i + 1
-      var p = SpeechSplitter.splitters.getOrElse(text.charAt(i), SpeechSplitter.NOT_SPLITTER)
-      if (p == SpeechSplitter.SPACE_FOR_THE_BEST && (next >= maxEnd || text.charAt(next).isWhitespace))
-        p = SpeechSplitter.BEST_SPLITTERS_EVER
-      if (p == SpeechSplitter.NOT_SPLITTER) {
+      var p = splitters.getOrElse(text.charAt(i), NOT_SPLITTER)
+      if (p == SPACE_FOR_THE_BEST && (next >= maxEnd || text.charAt(next).isWhitespace)) p = BEST_SPLITTERS_EVER
+      if (p == NOT_SPLITTER) {
         if (priority <= bestPriority) {
           end = i
           bestPriority = priority
-          if (aggressiveMode && priority == SpeechSplitter.BEST_SPLITTERS_EVER) next = maxEnd // break with reset
+          if (aggressiveMode && priority == BEST_SPLITTERS_EVER) next = maxEnd  // break with reset
         }
-        priority = SpeechSplitter.NOT_SPLITTER                                                // reset
+        priority = NOT_SPLITTER                                                 // reset
       } else if (p < priority) priority = p
       i = next
       if (i >= maxEnd) {

@@ -36,7 +36,7 @@ final class MainActivity extends FragmentStackActivity with LocationObservedActi
   protected override def onCreate(icicle: Bundle) {
     super.onCreate(icicle)
     setVolumeControlStream(AudioManager.STREAM_MUSIC)
-    if (App.mainFragment == null) push(new MainFragment)
+    if (mainFragment == null) push(new MainFragment)
     startService(serviceIntent)
   }
 
@@ -60,8 +60,8 @@ final class MainActivity extends FragmentStackActivity with LocationObservedActi
 
   private def processUri(uri: Uri) = if (canReadExtStorage) autoClose(getContentResolver.openInputStream(uri)) {
     input =>
-      App.mainFragment.inputText.setText(IOUtils.readAllText(input))
-      App.displayName = uri.getLastPathSegment
+      mainFragment.inputText.setText(IOUtils.readAllText(input))
+      displayName = uri.getLastPathSegment
     } else showToast(R.string.read_file_storage_denied)
 
   override def onNewIntent(data: Intent) {
@@ -70,7 +70,7 @@ final class MainActivity extends FragmentStackActivity with LocationObservedActi
       val uri = data.getData
       if (uri == null) return
       if (SynthesisService.ready && SynthesisService.instance.status != SynthesisService.IDLE) {
-        App.mainFragment.makeSnackbar(R.string.error_synthesis_in_progress).show
+        mainFragment.makeSnackbar(R.string.error_synthesis_in_progress).show
         return
       }
       if ("file".equals(uri.getScheme)) if (canReadExtStorage) processUri(uri) else {
@@ -78,23 +78,23 @@ final class MainActivity extends FragmentStackActivity with LocationObservedActi
         ActivityCompat.requestPermissions(this, Array(permission.READ_EXTERNAL_STORAGE), PERMISSION_REQUEST_STORAGE)
       } else {
         autoClose(getContentResolver.openInputStream(uri))(stream =>
-          App.mainFragment.inputText.setText(IOUtils.readAllText(stream)))
+          mainFragment.inputText.setText(IOUtils.readAllText(stream)))
         autoClose(getContentResolver.query(uri, Array(OpenableColumns.DISPLAY_NAME, MediaStore.MediaColumns.TITLE),
           null, null, null))(cursor => if (cursor != null && cursor.moveToFirst) {
           var index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-          App.displayName = cursor.getString(index)
-          if (index < 0 || App.displayName == null) {
+          displayName = cursor.getString(index)
+          if (index < 0 || displayName == null) {
             index = cursor.getColumnIndex(MediaStore.MediaColumns.TITLE)
-            App.displayName = cursor.getString(index)
+            displayName = cursor.getString(index)
           }
         })
       }
-      if ("application/ssml+xml".equalsIgnoreCase(data.getType) || App.displayName != null &&
-        App.displayName.toLowerCase.endsWith(".ssml")) App.enableSsmlDroid(true)
+      if ("application/ssml+xml".equalsIgnoreCase(data.getType) || displayName != null &&
+        displayName.toLowerCase.endsWith(".ssml")) enableSsmlDroid(true)
     } catch {
       case e: IOException =>
         e.printStackTrace
-        App.mainFragment.makeSnackbar(String.format(R.string.open_error, e.getMessage))
+        mainFragment.makeSnackbar(String.format(R.string.open_error, e.getMessage))
     }
   }
 
@@ -114,11 +114,11 @@ final class MainActivity extends FragmentStackActivity with LocationObservedActi
   }
 
   def showSave(mimeType: String, fileName: String, requestCode: Int) = if (Build.version < 19) {
-      val fragment = new SaveFileFragment(requestCode, mimeType, App.lastSaveDir, fileName)
+      val fragment = new SaveFileFragment(requestCode, mimeType, lastSaveDir, fileName)
       fragment.setSpawnLocation(getLocationOnScreen)
       push(fragment)
-    } else App.mainFragment.startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT)
+    } else mainFragment.startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT)
       .addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_TITLE, fileName).setType(mimeType), requestCode)
 
-  def saveFilePicked(file: File, requestCode: Int) = App.mainFragment.save(Uri.fromFile(file), requestCode)
+  def saveFilePicked(file: File, requestCode: Int) = mainFragment.save(Uri.fromFile(file), requestCode)
 }

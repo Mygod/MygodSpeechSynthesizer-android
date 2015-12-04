@@ -65,7 +65,7 @@ final class SettingsHolderFragment extends PreferenceFragmentPlus {
     })
     if (Build.version < 23)
       findPreference("text.enableSsmlDroid").setOnPreferenceChangeListener((_, newValue) => {
-        App.mainFragment.styleItem.setVisible(newValue.asInstanceOf[Boolean])
+        mainFragment.styleItem.setVisible(newValue.asInstanceOf[Boolean])
         true
       })
     findPreference("ssmlDroid.userGuidelines").setOnPreferenceClickListener(_ => {
@@ -84,7 +84,7 @@ final class SettingsHolderFragment extends PreferenceFragmentPlus {
       val count = voices.size
       val names = new ArrayBuffer[CharSequence](count)
       val ids = new ArrayBuffer[CharSequence](count)
-      val showLegacy = legacy getOrElse App.pref.getBoolean("engine.showLegacyVoices", false)
+      val showLegacy = legacy getOrElse pref.getBoolean("engine.showLegacyVoices", false)
       for (voice <- voices) {
         val features = voice.getFeatures
         if (showLegacy || !features.contains(ConstantsWrapper.KEY_FEATURE_LEGACY_SET_LANGUAGE_VOICE)) {

@@ -13,13 +13,15 @@ object SpeechPart {
 }
 
 final class SpeechPart(val start: Int = -1, val end: Int = -1, val isEarcon: Boolean = false) {
+  import SpeechPart._
+
   var file: File = _
   
   def equals(other: SpeechPart) = start == other.start && end == other.end && isEarcon == other.isEarcon
   override def equals(other: Any): Boolean = other match {
     case null => false
     case part: SpeechPart => equals(part)
-    case _ => try equals(SpeechPart.parse(other.toString)) catch {
+    case _ => try equals(parse(other.toString)) catch {
       case exc: Exception => false
     }
   }

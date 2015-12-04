@@ -25,8 +25,6 @@ object SynthesisService {
   val SPEAKING = 1
   val SYNTHESIZING = 2
 
-  val STOP = "tk.mygod.speech.synthesizer.action.STOP"
-
   private var _instance: SynthesisService = _
   def instance = {
     initLock.acquireUninterruptibly
@@ -66,13 +64,14 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
     if (status != IDLE) if (value) showNotification() else stopForeground(true)
   }
 
+  override def onStartCommand(intent: Intent, flags: Int, startId: Int) = Service.START_NOT_STICKY
   def onBind(intent: Intent) = null
   @IntDef(Array(IDLE, SPEAKING, SYNTHESIZING))
   var status: Int = _
 
   override def onCreate {
     super.onCreate
-    val engineID = App.pref.getString("engine", "")
+    val engineID = pref.getString("engine", "")
     engines = new AvailableTtsEngines(this)
     selectEngine(engineID)
     builder = new NotificationCompat.Builder(this).setContentTitle(R.string.notification_title)
@@ -80,14 +79,10 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
       .setColor(ContextCompat.getColor(this, R.color.material_primary_500))
       .setContentIntent(pendingIntent[MainActivity]).setCategory(NotificationCompat.CATEGORY_PROGRESS)
       .setVisibility(NotificationCompat.VISIBILITY_PUBLIC).setVibrate(new Array[Long](0))
-      .addAction(new Action(R.drawable.ic_av_mic_off, R.string.action_stop, pendingBroadcast(STOP)))
+      .addAction(new Action(R.drawable.ic_av_mic_off, R.string.action_stop,
+        pendingBroadcast("tk.mygod.speech.synthesizer.action.STOP")))
     _instance = this
     initLock.release
-  }
-
-  override def onStartCommand(intent: Intent, flags: Int, startId: Int) = {
-    if (intent != null && intent.getBooleanExtra("stop", false)) stop
-    Service.START_NOT_STICKY
   }
 
   override def onDestroy {
@@ -101,37 +96,37 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
     if (text != null) {
       lastText = text.toString.replaceAll("\\s+", " ")
       builder.setContentText(lastText)
-        .setTicker(if (App.pref.getBoolean("appearance.ticker", false)) lastText else null)
+        .setTicker(if (pref.getBoolean("appearance.ticker", false)) lastText else null)
     }
     if (inBackground) startForeground(1, new NotificationCompat.BigTextStyle(builder
       .setWhen(System.currentTimeMillis)
-      .setPriority(App.pref.getString("appearance.notificationType", "0").toInt)).bigText(lastText).build)
+      .setPriority(pref.getString("appearance.notificationType", "0").toInt)).bigText(lastText).build)
   }
 
   def selectEngine(id: String) {
     stop
     if (!engines.selectEngine(id)) return
-    App.editor.putString("engine", id)
-    App.editor.apply
-    engines.selectedEngine.setVoice(App.pref.getString("engine." + id, ""))
+    editor.putString("engine", id)
+    editor.apply
+    engines.selectedEngine.setVoice(pref.getString("engine." + id, ""))
   }
 
   def selectVoice(voice: String): Unit = selectVoice(engines.selectedEngine, voice)
   def selectVoice(engine: TtsEngine, voice: String) {
     engine.setVoice(voice)
-    App.editor.putString("engine." + engine.getID, engine.getVoice.getName)
-    App.editor.apply
+    editor.putString("engine." + engine.getID, engine.getVoice.getName)
+    editor.apply
   }
 
   def prepare(text: String) {
     rawText = text
-    if (App.enableSsmlDroid) {
-      val parser = SsmlDroid.fromSsml(text, App.ignoreSingleLineBreak, null)
+    if (enableSsmlDroid) {
+      val parser = SsmlDroid.fromSsml(text, ignoreSingleLineBreak, null)
       mappings = parser.Mappings
       currentText = parser.Result
     } else {
       mappings = null
-      currentText = if (App.ignoreSingleLineBreak) text.replaceAll("(?<!\\n)(\\n)(?!\\n)", " ") else text
+      currentText = if (ignoreSingleLineBreak) text.replaceAll("(?<!\\n)(\\n)(?!\\n)", " ") else text
     }
     prepared = -1
     currentStart = -1
@@ -164,14 +159,14 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
   override def onTtsSynthesisStarting(length: Int) {
     builder.setProgress(0, length, true)
     textLength = length
-    engines.selectedEngine.pitch = App.pref.getInt("tweaks.pitch", 100)
-    engines.selectedEngine.speechRate = App.pref.getInt("tweaks.speechRate", 100)
-    engines.selectedEngine.pan = App.pref.getFloat("tweaks.pan", 0)
-    if (App.mainFragment != null) App.mainFragment.onTtsSynthesisStarting(length)
+    engines.selectedEngine.pitch = pref.getInt("tweaks.pitch", 100)
+    engines.selectedEngine.speechRate = pref.getInt("tweaks.speechRate", 100)
+    engines.selectedEngine.pan = pref.getFloat("tweaks.pan", 0)
+    if (mainFragment != null) mainFragment.onTtsSynthesisStarting(length)
   }
   override def onTtsSynthesisPrepared(end: Int) {
     prepared = end
-    if (App.mainFragment != null) App.mainFragment.onTtsSynthesisPrepared(end)
+    if (mainFragment != null) mainFragment.onTtsSynthesisPrepared(end)
   }
   override def onTtsSynthesisCallback(start: Int, e: Int) {
     var end = e
@@ -180,7 +175,7 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
     showNotification(currentText.subSequence(start, end))
     currentStart = start
     currentEnd = end
-    if (App.mainFragment != null) App.mainFragment.onTtsSynthesisCallback(start, end)
+    if (mainFragment != null) mainFragment.onTtsSynthesisCallback(start, end)
   }
   override def onTtsSynthesisError(s: Int, e: Int) {
     var start = s
@@ -192,13 +187,13 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
     }
     if (end < start) end = start
     if (start < end) handler.post(showToast(String.format(R.string.synthesis_error, rawText.substring(start, end))))
-    if (App.mainFragment != null) App.mainFragment.onTtsSynthesisError(start, end)
+    if (mainFragment != null) mainFragment.onTtsSynthesisError(start, end)
   }
   override def onTtsSynthesisFinished {
     status = IDLE
     stopForeground(true)
     if (descriptor != null) descriptor = null
-    if (App.mainFragment != null) App.mainFragment.onTtsSynthesisFinished
+    if (mainFragment != null) mainFragment.onTtsSynthesisFinished
     else if (ready) stopSelf
   }
 }

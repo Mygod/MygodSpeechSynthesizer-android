@@ -10,8 +10,8 @@ import android.support.v4.content.ContextCompat
 import android.text.TextUtils
 import tk.mygod.concurrent.StoppableFuture
 import tk.mygod.speech.synthesizer.R
-import tk.mygod.util.IOUtils
 import tk.mygod.util.Conversions._
+import tk.mygod.util.IOUtils
 
 import scala.collection.{immutable, mutable}
 
@@ -27,6 +27,7 @@ object GoogleTranslateTtsEngine {
 
 final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: TtsEngine => Unit = null)
   extends TtsEngine(context, selfDestructionListener) {
+  import GoogleTranslateTtsEngine._
   private final class SpeakTask(private val currentText: CharSequence, private val startOffset: Int,
                                 finished: Unit => Unit = null) extends StoppableFuture {
     private val playbackQueue = new ArrayBlockingQueue[AnyRef](29)
@@ -168,16 +169,16 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
   private var speakTask: SpeakTask = null
   private var synthesizeToStreamTask: SynthesizeToStreamTask = null
 
-  def getVoices = GoogleTranslateTtsEngine.voices
+  def getVoices = voices
   def getVoice = voice
   def setVoice(voice: TtsVoice) = {
-    val result = GoogleTranslateTtsEngine.voices.contains(voice)
+    val result = voices.contains(voice)
     if (result) this.voice = voice.asInstanceOf[LocaleWrapper]
     result
   }
   def setVoice(voice: String): Boolean = {
     if (TextUtils.isEmpty(voice)) return false
-    for (v <- GoogleTranslateTtsEngine.voices) if (voice == v.getName) {
+    for (v <- voices) if (voice == v.getName) {
       this.voice = v.asInstanceOf[LocaleWrapper]
       return true
     }
