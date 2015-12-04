@@ -361,8 +361,9 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
 
   private def getStartOffset = {
     val start = App.pref.getString("text.start", "beginning")
-    if ("selection_start" == start) inputText.getSelectionStart
+    val raw = if ("selection_start" == start) inputText.getSelectionStart
     else if ("selection_end" == start) inputText.getSelectionEnd else 0
+    if (SynthesisService.instance.mappings == null) raw else SynthesisService.instance.mappings.getTargetOffset(raw)
   }
 
   private def getText = {

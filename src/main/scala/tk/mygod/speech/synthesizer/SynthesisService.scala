@@ -145,7 +145,7 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
     prepare(text)
     engines.selectedEngine.setSynthesisCallbackListener(this)
     onTtsSynthesisStarting(currentText.length)
-    engines.selectedEngine.speak(currentText, mappings.getTargetOffset(startOffset))
+    engines.selectedEngine.speak(currentText, startOffset)
   }
   def synthesizeToUri(text: String, startOffset: Int, uri: Uri) {
     descriptor = getContentResolver.openFileDescriptor(uri, "w")
@@ -156,7 +156,7 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
     prepare(text)
     engines.selectedEngine.setSynthesisCallbackListener(this)
     onTtsSynthesisStarting(currentText.length)
-    engines.selectedEngine.synthesizeToStream(currentText, mappings.getTargetOffset(startOffset), output, getCacheDir)
+    engines.selectedEngine.synthesizeToStream(currentText, startOffset, output, getCacheDir)
   }
   def stop {
     engines.selectedEngine.stop
