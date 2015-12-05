@@ -21,9 +21,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 object SynthesisService {
-  val IDLE = 0
-  val SPEAKING = 1
-  val SYNTHESIZING = 2
+  final val IDLE = 0
+  final val SPEAKING = 1
+  final val SYNTHESIZING = 2
 
   private var _instance: SynthesisService = _
   def instance = {

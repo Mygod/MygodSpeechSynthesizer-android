@@ -18,7 +18,7 @@ import android.text.style.BackgroundColorSpan
 import android.view.ActionMode.Callback2
 import android.view._
 import android.view.inputmethod.InputMethodManager
-import android.widget.ProgressBar
+import android.widget.{Toast, ProgressBar}
 import android.widget.TextView.BufferType
 import tk.mygod.CurrentApp
 import tk.mygod.app.ToolbarFragment
@@ -26,7 +26,7 @@ import tk.mygod.os.Build
 import tk.mygod.speech.synthesizer.MainFragment._
 import tk.mygod.speech.synthesizer.TypedResource._
 import tk.mygod.speech.tts.OnTtsSynthesisCallbackListener
-import tk.mygod.util.{IOUtils, MimeUtils}
+import tk.mygod.util.{MetricsUtils, IOUtils, MimeUtils}
 import tk.mygod.view.ViewPager
 
 /**
@@ -98,6 +98,12 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
           SynthesisService.instance.stop
       }
     } else SynthesisService.instance.stop))
+    fab.setOnLongClickListener(_ => {
+      mainActivity.positionToast(Toast.makeText(mainActivity, if (SynthesisService.instance.status ==
+        SynthesisService.IDLE) R.string.action_speak else R.string.action_stop, Toast.LENGTH_SHORT), fab, 0,
+        MetricsUtils.dp2px(mainActivity, -8), true).show
+      true
+    })
     val buildTime = CurrentApp.getBuildTime(mainActivity)
     pager = result.findView(TR.pager)
     inputText = result.findView(TR.input_text)
