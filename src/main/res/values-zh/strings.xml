@@ -6,6 +6,8 @@
         SsmlDroid™。\n\n常见问题：如果出现“合成失败”的错误，可能是因为您选择的引擎需要互联网连接，请检查您的互联网连接。大多数 TTS
         引擎不支持所有的功能，因此如果遇到问题可以尝试切换引擎。如果此应用崩溃/无响应，请报告给 Play
         商店这样我们可以尝试修复这个问题。你也可以从 Play 市场等应用商店上下载引擎。</string>
+    <string name="action_speak">阅读</string>
+    <string name="action_stop">停止</string>
     <string name="action_synthesize_to_file">合成到文件</string>
     <string name="action_open">打开</string>
     <string name="action_save">保存</string>
