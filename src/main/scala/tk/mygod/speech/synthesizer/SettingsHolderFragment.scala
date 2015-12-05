@@ -21,6 +21,7 @@ import scala.concurrent.Future
  * @author Mygod
  */
 final class SettingsHolderFragment extends PreferenceFragmentPlus {
+  private lazy val service = getActivity.asInstanceOf[MainActivity].connection.service.orNull          
   private var engine: IconListPreference = _
   private var voice: IconListPreference = _
 
@@ -29,35 +30,33 @@ final class SettingsHolderFragment extends PreferenceFragmentPlus {
     addPreferencesFromResource(R.xml.settings)
     engine = findPreference("engine").asInstanceOf[IconListPreference]
     engine.setOnPreferenceChangeListener((_, newValue) => {
-      SynthesisService.instance.selectEngine(newValue.toString)
+      service.selectEngine(newValue.toString)
       updateVoices()
       true
     })
     voice = findPreference("engine.voice").asInstanceOf[IconListPreference]
     voice.setOnPreferenceChangeListener((_, newValue) => {
-      SynthesisService.instance.selectVoice(newValue.toString)
-      voice.setSummary(SynthesisService.instance.engines.selectedEngine.getVoice.getDisplayName)
+      service.selectVoice(newValue.toString)
+      voice.setSummary(service.engines.selectedEngine.getVoice.getDisplayName)
       true
     })
-    SynthesisService.read {
-      val count = SynthesisService.instance.engines.size
-      val names = new Array[CharSequence](count)
-      val ids = new Array[CharSequence](count)
-      val icons = new Array[Drawable](count)
-      for (i <- 0 until count) {
-        val te: TtsEngine = SynthesisService.instance.engines(i)
-        names(i) = te.getName
-        ids(i) = te.getID
-        icons(i) = te.getIcon
-      }
-      runOnUiThread {
-        engine.setEntries(names)
-        engine.setEntryValues(ids)
-        engine.setEntryIcons(icons)
-        engine.setValue(SynthesisService.instance.engines.selectedEngine.getID)
-        engine.init
-        updateVoices()
-      }
+    val count = service.engines.size
+    val names = new Array[CharSequence](count)
+    val ids = new Array[CharSequence](count)
+    val icons = new Array[Drawable](count)
+    for (i <- 0 until count) {
+      val te: TtsEngine = service.engines(i)
+      names(i) = te.getName
+      ids(i) = te.getID
+      icons(i) = te.getIcon
+    }
+    runOnUiThread {
+      engine.setEntries(names)
+      engine.setEntryValues(ids)
+      engine.setEntryIcons(icons)
+      engine.setValue(service.engines.selectedEngine.getID)
+      engine.init
+      updateVoices()
     }
     findPreference("engine.showLegacyVoices").setOnPreferenceChangeListener((_, newValue) => {
       updateVoices(Some(newValue.asInstanceOf[Boolean]))
@@ -80,7 +79,7 @@ final class SettingsHolderFragment extends PreferenceFragmentPlus {
     voice.setValue(null)
     voice.setSummary(null)
     Future {
-      val voices = SynthesisService.instance.engines.selectedEngine.getVoices
+      val voices = service.engines.selectedEngine.getVoices
       val count = voices.size
       val names = new ArrayBuffer[CharSequence](count)
       val ids = new ArrayBuffer[CharSequence](count)
@@ -117,7 +116,7 @@ final class SettingsHolderFragment extends PreferenceFragmentPlus {
           ids.append(voice.getName)
         }
       }
-      val v = SynthesisService.instance.engines.selectedEngine.getVoice
+      val v = service.engines.selectedEngine.getVoice
       runOnUiThread {
         voice.setEntries(names.toArray)
         voice.setEntryValues(ids.toArray)

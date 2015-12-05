@@ -3,7 +3,7 @@ package tk.mygod.speech.synthesizer
 import java.io.{IOException, OutputStream}
 import java.net.{URI, URISyntaxException}
 import java.text.{DateFormat, NumberFormat}
-import java.util.{Calendar, Date, Locale}
+import java.util.{Calendar, Locale}
 
 import android.app.Activity
 import android.content._
@@ -18,15 +18,13 @@ import android.text.style.BackgroundColorSpan
 import android.view.ActionMode.Callback2
 import android.view._
 import android.view.inputmethod.InputMethodManager
-import android.widget.{Toast, ProgressBar}
 import android.widget.TextView.BufferType
-import tk.mygod.CurrentApp
+import android.widget.{ProgressBar, Toast}
 import tk.mygod.app.ToolbarFragment
 import tk.mygod.os.Build
-import tk.mygod.speech.synthesizer.MainFragment._
 import tk.mygod.speech.synthesizer.TypedResource._
 import tk.mygod.speech.tts.OnTtsSynthesisCallbackListener
-import tk.mygod.util.{MetricsUtils, IOUtils, MimeUtils}
+import tk.mygod.util.{MetricsUtils, MimeUtils}
 import tk.mygod.view.ViewPager
 
 /**
@@ -40,7 +38,10 @@ object MainFragment {
 }
 
 final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackListener with OnMenuItemClickListener {
-  private var mainActivity: MainActivity = _
+  import MainFragment._
+
+  private var activity: MainActivity = _
+  def service = activity.connection.service.orNull
   private var progressBar: ProgressBar = _
   var pager: ViewPager = _
   var inputText: AppCompatEditText = _
@@ -50,33 +51,22 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
   private var fab: FloatingActionButton = _
   private var selectionStart: Int = _
   private var selectionEnd: Int = _
-  private lazy val inputMethodManager = mainActivity.systemService[InputMethodManager]
+  private lazy val inputMethodManager = activity.systemService[InputMethodManager]
   private lazy val highlightSpan =
-    new BackgroundColorSpan(ContextCompat.getColor(mainActivity, R.color.material_purple_300_highlight))
-
-  private def formatDefaultText(pattern: String, buildTime: Date) = {
-    val calendar = Calendar.getInstance
-    calendar.setTime(buildTime)
-    String.format(pattern, CurrentApp.getVersionName(mainActivity),
-      DateFormat.getDateInstance(DateFormat.FULL).format(buildTime),
-      DateFormat.getTimeInstance(DateFormat.FULL).format(buildTime), calendar.get(Calendar.YEAR): Integer,
-      calendar.get(Calendar.MONTH): Integer, calendar.get(Calendar.DAY_OF_MONTH): Integer,
-      calendar.get(Calendar.DAY_OF_WEEK): Integer, calendar.get(Calendar.HOUR_OF_DAY): Integer,
-      calendar.get(Calendar.MINUTE): Integer)
-  }
+    new BackgroundColorSpan(ContextCompat.getColor(activity, R.color.material_purple_300_highlight))
 
   override def isFullscreen = true
 
   //noinspection ScalaDeprecation
   override def onAttach(activity: Activity) {
     super.onAttach(activity)
-    mainActivity = activity.asInstanceOf[MainActivity]
+    this.activity = activity.asInstanceOf[MainActivity]
     if (mainFragment != null) throw new RuntimeException("MainFragment is being attached twice!")
     mainFragment = this
   }
   override def onDetach {
     super.onDetach
-    mainActivity = null
+    activity = null
     mainFragment = null
   }
 
@@ -90,21 +80,20 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
     toolbar.setOnMenuItemClickListener(this)
     progressBar = result.findView(TR.progressBar)
     fab = result.findView(TR.fab)
-    fab.setOnClickListener(_ => SynthesisService.write(if (SynthesisService.instance.status == SynthesisService.IDLE) {
-      try SynthesisService.instance.speak(getText, getStartOffset) catch {
+    fab.setOnClickListener(_ => if (service.status == SynthesisService.IDLE) {
+      try service.speak(getText, getStartOffset) catch {
         case e: Exception =>
           e.printStackTrace
           showToast(String.format(R.string.synthesis_error, e.getLocalizedMessage))
-          SynthesisService.instance.stop
+          service.stop
       }
-    } else SynthesisService.instance.stop))
+    } else service.stop)
     fab.setOnLongClickListener(_ => {
-      mainActivity.positionToast(Toast.makeText(mainActivity, if (SynthesisService.instance.status ==
+      activity.positionToast(Toast.makeText(activity, if (service.status ==
         SynthesisService.IDLE) R.string.action_speak else R.string.action_stop, Toast.LENGTH_SHORT), fab, 0,
-        MetricsUtils.dp2px(mainActivity, -8), true).show
+        MetricsUtils.dp2px(activity, -8), true).show
       true
     })
-    val buildTime = CurrentApp.getBuildTime(mainActivity)
     pager = result.findView(TR.pager)
     inputText = result.findView(TR.input_text)
     textView = result.findView(TR.text_view)
@@ -121,35 +110,14 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
       inputText.setCustomInsertionActionModeCallback(callback2)
       inputText.setCustomSelectionActionModeCallback(callback2)
     }
-    var failed = true
-    if (enableSsmlDroid) try {
-      inputText.setText(formatDefaultText(IOUtils.readAllText(getResources.openRawResource(R.raw.input_text_default)),
-        buildTime))
-      failed = false
-    } catch {
-      case e: IOException => e.printStackTrace
-    }
-    if (failed) inputText.setText(formatDefaultText(R.string.input_text_default, buildTime))
-    val intent = mainActivity.getIntent
-    if (intent != null) mainActivity.onNewIntent(intent)
+    val intent = activity.getIntent
+    if (intent != null) activity.onNewIntent(intent)
     result
-  }
-
-  override def onViewStateRestored(savedInstanceState: Bundle) {
-    super.onViewStateRestored(savedInstanceState)
-    // update the user interface while the activity is dead
-    if (!SynthesisService.ready || SynthesisService.instance.status == SynthesisService.IDLE) onTtsSynthesisFinished
-    else onTtsSynthesisStarting(SynthesisService.instance.currentText.length)
-    if (SynthesisService.ready) {
-      if (SynthesisService.instance.prepared >= 0) onTtsSynthesisPrepared(SynthesisService.instance.prepared)
-      if (SynthesisService.instance.currentStart >= 0)
-        onTtsSynthesisCallback(SynthesisService.instance.currentStart, SynthesisService.instance.currentEnd)
-    }
   }
 
   override def onCreateContextMenu(menu: ContextMenu, v: View, menuInfo: ContextMenu.ContextMenuInfo) {
     if (v != inputText) return
-    mainActivity.getMenuInflater.inflate(R.menu.input_text_styles, menu)
+    activity.getMenuInflater.inflate(R.menu.input_text_styles, menu)
     menu.setHeaderTitle(R.string.action_style)
   }
 
@@ -321,7 +289,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
     if (id == R.id.action_tts_earcon && selection.length == 0) startActivityForResult(
       new Intent(if (Build.version >= 19) Intent.ACTION_OPEN_DOCUMENT else Intent.ACTION_GET_CONTENT)
         .addCategory(Intent.CATEGORY_OPENABLE).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        .addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION).setType("audio/*"), MainFragment.OPEN_EARCON)
+        .addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION).setType("audio/*"), OPEN_EARCON)
     else if (processTag(id | item.getGroupId, source, selection, item.getTitleCondensed))
       return super.onContextItemSelected(item)
     true
@@ -335,15 +303,13 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
         selectionStart = inputText.getSelectionStart
         selectionEnd = inputText.getSelectionEnd
         registerForContextMenu(inputText)
-        mainActivity.openContextMenu(inputText)
+        activity.openContextMenu(inputText)
         unregisterForContextMenu(inputText)
         true
       case R.id.action_synthesize_to_file =>
-        SynthesisService.read {
-          val mime = SynthesisService.instance.engines.selectedEngine.getMimeType
-          runOnUiThread(mainActivity.showSave(mime, getSaveFileName + '.' +
-            MimeUtils.getExtension(mime), SAVE_SYNTHESIS))
-        }
+        val mime = service.engines.selectedEngine.getMimeType
+        runOnUiThread(activity.showSave(mime, getSaveFileName + '.' +
+          MimeUtils.getExtension(mime), SAVE_SYNTHESIS))
         true
       case R.id.action_open =>
         try startActivityForResult(new Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE)
@@ -356,10 +322,10 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
         val extension = if (ssml) ".ssml" else ".txt"
         var fileName = getSaveFileName
         if (!fileName.toLowerCase.endsWith(extension)) fileName += extension
-        mainActivity.showSave(mime, fileName, SAVE_TEXT)
+        activity.showSave(mime, fileName, SAVE_TEXT)
         true
       case R.id.action_settings =>
-        mainActivity.showSettings
+        activity.showSettings
         true
       case _ => false
     }
@@ -369,7 +335,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
     val start = pref.getString("text.start", "beginning")
     val raw = if ("selection_start" == start) inputText.getSelectionStart
     else if ("selection_end" == start) inputText.getSelectionEnd else 0
-    if (SynthesisService.instance.mappings == null) raw else SynthesisService.instance.mappings.getTargetOffset(raw)
+    if (service.mappings == null) raw else service.mappings.getTargetOffset(raw)
   }
 
   private def getText = {
@@ -385,7 +351,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
     case SAVE_TEXT =>
       var output: OutputStream = null
       try {
-        output = mainActivity.getContentResolver.openOutputStream(uri)
+        output = activity.getContentResolver.openOutputStream(uri)
         output.write(inputText.getText.toString.getBytes)
       } catch {
         case e: IOException =>
@@ -395,22 +361,22 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
         case e: IOException => e.printStackTrace
       }
     case SAVE_SYNTHESIS =>
-      SynthesisService.write(SynthesisService.instance.synthesizeToUri(getText, getStartOffset, uri), {
+      try service.synthesizeToUri(getText, getStartOffset, uri) catch {
         case e: Exception =>
           e.printStackTrace
           showToast(String.format(R.string.synthesis_error, e.getMessage))
-          SynthesisService.instance.stop
-      })
+          service.stop
+      }
   }
   override def onActivityResult(requestCode: Int, resultCode: Int, data: Intent) = requestCode match {
     case OPEN_TEXT =>
-      if (resultCode == Activity.RESULT_OK) mainActivity.onNewIntent(data)
+      if (resultCode == Activity.RESULT_OK) activity.onNewIntent(data)
     case SAVE_TEXT | SAVE_SYNTHESIS =>
       if (resultCode == Activity.RESULT_OK) save(data.getData, requestCode)
     case OPEN_EARCON => if (resultCode == Activity.RESULT_OK) {
       val uri = data.getData
       if (Build.version >= 19)
-        try mainActivity.getContentResolver.takePersistableUriPermission(uri,
+        try activity.getContentResolver.takePersistableUriPermission(uri,
           data.getFlags & Intent.FLAG_GRANT_READ_URI_PERMISSION) catch {
           case e: Exception => e.printStackTrace
         }
@@ -439,9 +405,9 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
   def onTtsSynthesisCallback(s: Int, e: Int) = {
     var start = s
     var end = e
-    if (SynthesisService.instance.mappings != null) {
-      start = SynthesisService.instance.mappings.getSourceOffset(start, false)
-      end = SynthesisService.instance.mappings.getSourceOffset(end, true)
+    if (service.mappings != null) {
+      start = service.mappings.getSourceOffset(start, false)
+      end = service.mappings.getSourceOffset(end, true)
     }
     if (end < start) end = start
     runOnUiThread {

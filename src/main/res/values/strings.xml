@@ -12,6 +12,7 @@
     <string name="action_stop">Stop</string>
     <string name="action_open">Open</string>
     <string name="action_save">Save</string>
+    <string name="action_synthesize_to_file">Synthesize to File</string>
     <string name="open_error">Open failed: %s</string>
     <string name="open_error_no_browser">Open failed: You don\'t have a file browser that can be used to pick a file.
         Please install one before you proceed.</string>

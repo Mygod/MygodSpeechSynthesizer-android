@@ -1,7 +1,8 @@
 package tk.mygod.speech.synthesizer
 
-import java.io.FileOutputStream
-import java.util.concurrent.Semaphore
+import java.io.{FileOutputStream, IOException}
+import java.text.DateFormat
+import java.util.Calendar
 
 import android.app.Service
 import android.content.Intent
@@ -11,37 +12,23 @@ import android.support.annotation.IntDef
 import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationCompat.Action
 import android.support.v4.content.ContextCompat
-import tk.mygod.concurrent.FailureHandler
-import tk.mygod.content.ContextPlus
+import android.util.Log
+import tk.mygod.CurrentApp
+import tk.mygod.app.ServicePlus
 import tk.mygod.speech.tts.{AvailableTtsEngines, OnTtsSynthesisCallbackListener, TtsEngine}
 import tk.mygod.text.{SsmlDroid, TextMappings}
 import tk.mygod.util.Conversions._
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import tk.mygod.util.IOUtils
 
 object SynthesisService {
   final val IDLE = 0
   final val SPEAKING = 1
   final val SYNTHESIZING = 2
 
-  private var _instance: SynthesisService = _
-  def instance = {
-    initLock.acquireUninterruptibly
-    initLock.release
-    _instance
-  }
-  def ready = _instance != null
-  private val initLock = new Semaphore(1)
-  initLock.acquireUninterruptibly
-  
-  def read[T](action: => T, fail: PartialFunction[Throwable, Unit] = FailureHandler) =
-    if (SynthesisService.ready) action else Future(action) onFailure fail
-  def write[T](action: => T, fail: PartialFunction[Throwable, Unit] = FailureHandler) =
-    read(SynthesisService.synchronized(action), fail)
+  var instance: SynthesisService = _
 }
 
-final class SynthesisService extends Service with ContextPlus with OnTtsSynthesisCallbackListener {
+final class SynthesisService extends ServicePlus with OnTtsSynthesisCallbackListener {
   import SynthesisService._
 
   var engines: AvailableTtsEngines = _
@@ -49,7 +36,7 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
   var mappings: TextMappings = _
   private var descriptor: ParcelFileDescriptor = _
   var currentText: CharSequence = _
-  private var rawText: String = _
+  var rawText: String = _
   private var lastText: String = _
   var textLength: Int = _
   var prepared: Int = -1
@@ -61,14 +48,24 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
   def inBackground = _inBackground
   def inBackground(value: Boolean) {
     _inBackground = value
-    if (status != IDLE) if (value) showNotification() else stopForeground(true)
+    if (status != IDLE) if (value) showNotification() else hideNotification
   }
 
   override def onStartCommand(intent: Intent, flags: Int, startId: Int) = Service.START_NOT_STICKY
-  def onBind(intent: Intent) = null
   @IntDef(Array(IDLE, SPEAKING, SYNTHESIZING))
   var status: Int = _
 
+  private def formatDefaultText(pattern: String) = {
+    val calendar = Calendar.getInstance
+    val buildTime = CurrentApp.getBuildTime(this)
+    calendar.setTime(buildTime)
+    String.format(pattern, CurrentApp.getVersionName(this),
+      DateFormat.getDateInstance(DateFormat.FULL).format(buildTime),
+      DateFormat.getTimeInstance(DateFormat.FULL).format(buildTime), calendar.get(Calendar.YEAR): Integer,
+      calendar.get(Calendar.MONTH): Integer, calendar.get(Calendar.DAY_OF_MONTH): Integer,
+      calendar.get(Calendar.DAY_OF_WEEK): Integer, calendar.get(Calendar.HOUR_OF_DAY): Integer,
+      calendar.get(Calendar.MINUTE): Integer)
+  }
   override def onCreate {
     super.onCreate
     val engineID = pref.getString("engine", "")
@@ -81,15 +78,19 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
       .setVisibility(NotificationCompat.VISIBILITY_PUBLIC).setVibrate(new Array[Long](0))
       .addAction(new Action(R.drawable.ic_av_mic_off, R.string.action_stop,
         pendingBroadcast("tk.mygod.speech.synthesizer.action.STOP")))
-    _instance = this
-    initLock.release
+    if (enableSsmlDroid)
+      try rawText = formatDefaultText(IOUtils.readAllText(getResources.openRawResource(R.raw.input_text_default)))
+      catch {
+        case e: IOException => e.printStackTrace
+      }
+    if (rawText == null) rawText = formatDefaultText(R.string.input_text_default)
+    instance = this
   }
 
   override def onDestroy {
     engines.onDestroy
     super.onDestroy
-    _instance = null
-    initLock.acquireUninterruptibly
+    instance = null
   }
 
   private def showNotification(text: CharSequence = null) = if (status == IDLE) lastText = null else {
@@ -98,9 +99,15 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
       builder.setContentText(lastText)
         .setTicker(if (pref.getBoolean("appearance.ticker", false)) lastText else null)
     }
-    if (inBackground) startForeground(1, new NotificationCompat.BigTextStyle(builder
-      .setWhen(System.currentTimeMillis)
-      .setPriority(pref.getString("appearance.notificationType", "0").toInt)).bigText(lastText).build)
+    if (inBackground) {
+      startService(intent[SynthesisService])
+      startForeground(1, new NotificationCompat.BigTextStyle(builder.setWhen(System.currentTimeMillis)
+        .setPriority(pref.getString("appearance.notificationType", "0").toInt)).bigText(lastText).build)
+    }
+  }
+  private def hideNotification {
+    stopSelf
+    stopForeground(true)
   }
 
   def selectEngine(id: String) {
@@ -180,7 +187,6 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
   override def onTtsSynthesisError(s: Int, e: Int) {
     var start = s
     var end = e
-    instance
     if (mappings != null) {
       start = mappings.getSourceOffset(start, false)
       end = mappings.getSourceOffset(end, true)
@@ -191,9 +197,9 @@ final class SynthesisService extends Service with ContextPlus with OnTtsSynthesi
   }
   override def onTtsSynthesisFinished {
     status = IDLE
-    stopForeground(true)
+    hideNotification
     if (descriptor != null) descriptor = null
     if (mainFragment != null) mainFragment.onTtsSynthesisFinished
-    else if (ready) stopSelf
+    else stopSelf
   }
 }

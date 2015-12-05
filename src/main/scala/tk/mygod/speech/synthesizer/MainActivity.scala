@@ -3,17 +3,19 @@ package tk.mygod.speech.synthesizer
 import java.io.{File, IOException}
 
 import android.Manifest.permission
-import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.{ComponentName, Context, Intent}
 import android.media.AudioManager
 import android.net.Uri
-import android.os.Bundle
+import android.os.{IBinder, Bundle}
 import android.provider.{MediaStore, OpenableColumns}
 import android.support.v13.app.FragmentCompat.OnRequestPermissionsResultCallback
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
+import android.util.Log
 import tk.mygod.app.SaveFileFragment.SaveFileCallback
 import tk.mygod.app.{FragmentStackActivity, LocationObservedActivity, SaveFileFragment}
+import tk.mygod.content.ServicePlusConnection
 import tk.mygod.os.Build
 import tk.mygod.util.CloseUtils._
 import tk.mygod.util.IOUtils
@@ -30,6 +32,20 @@ final class MainActivity extends FragmentStackActivity with LocationObservedActi
   import MainActivity._
 
   private lazy val serviceIntent = intent[SynthesisService]
+  val connection = new SynthesisServiceConnection
+  class SynthesisServiceConnection extends ServicePlusConnection[SynthesisService] {
+    override def onServiceConnected(name: ComponentName, binder: IBinder) {
+      super.onServiceConnected(name, binder)
+      mainFragment.inputText.setText(service.get.rawText)
+      mainFragment.textView.setText(service.get.rawText)
+      if (service.get.status == SynthesisService.IDLE) mainFragment.onTtsSynthesisFinished else {
+        mainFragment.onTtsSynthesisStarting(service.get.currentText.length)
+        if (service.get.prepared >= 0) mainFragment.onTtsSynthesisPrepared(service.get.prepared)
+        if (service.get.currentStart >= 0)
+          mainFragment.onTtsSynthesisCallback(service.get.currentStart, service.get.currentEnd)
+      }
+    }
+  }
   var settingsFragment: SettingsFragment = _
   private var pendingUri: Uri = _
 
@@ -37,22 +53,28 @@ final class MainActivity extends FragmentStackActivity with LocationObservedActi
     super.onCreate(icicle)
     setVolumeControlStream(AudioManager.STREAM_MUSIC)
     if (mainFragment == null) push(new MainFragment)
-    startService(serviceIntent)
+    bindService(serviceIntent, connection, Context.BIND_AUTO_CREATE)
   }
 
   protected override def onStop {
     super.onStop
-    SynthesisService.write(SynthesisService.instance.inBackground(true))
+    connection.service match {
+      case Some(service) => service.inBackground(true)
+      case _ =>
+    }
   }
 
   protected override def onStart {
     super.onStart
-    if (SynthesisService.ready) SynthesisService.instance.inBackground(false)
+    connection.service match {
+      case Some(service) => service.inBackground(true)
+      case _ =>
+    }
   }
 
   protected override def onDestroy {
     super.onDestroy
-    SynthesisService.write(if (SynthesisService.instance.status == SynthesisService.IDLE) stopService(serviceIntent))
+    unbindService(connection)
   }
 
   private def canReadExtStorage =
@@ -69,7 +91,10 @@ final class MainActivity extends FragmentStackActivity with LocationObservedActi
     if (data != null) try {
       val uri = data.getData
       if (uri == null) return
-      if (SynthesisService.ready && SynthesisService.instance.status != SynthesisService.IDLE) {
+      if ((connection.service match {
+        case Some(service) => service.status
+        case _ => SynthesisService.IDLE
+      }) != SynthesisService.IDLE) {
         mainFragment.makeSnackbar(R.string.error_synthesis_in_progress).show
         return
       }
