@@ -12,12 +12,10 @@ import android.support.annotation.IntDef
 import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationCompat.Action
 import android.support.v4.content.ContextCompat
-import android.util.Log
 import tk.mygod.CurrentApp
 import tk.mygod.app.ServicePlus
 import tk.mygod.speech.tts.{AvailableTtsEngines, OnTtsSynthesisCallbackListener, TtsEngine}
 import tk.mygod.text.{SsmlDroid, TextMappings}
-import tk.mygod.util.Conversions._
 import tk.mygod.util.IOUtils
 
 object SynthesisService {
@@ -192,7 +190,8 @@ final class SynthesisService extends ServicePlus with OnTtsSynthesisCallbackList
       end = mappings.getSourceOffset(end, true)
     }
     if (end < start) end = start
-    if (start < end) handler.post(showToast(String.format(R.string.synthesis_error, rawText.substring(start, end))))
+    if (start < end)
+      handler.post(() => makeToast(String.format(R.string.synthesis_error, rawText.substring(start, end))).show)
     if (mainFragment != null) mainFragment.onTtsSynthesisError(start, end)
   }
   override def onTtsSynthesisFinished {

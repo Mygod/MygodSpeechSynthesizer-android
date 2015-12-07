@@ -84,7 +84,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
       try service.speak(getText, getStartOffset) catch {
         case e: Exception =>
           e.printStackTrace
-          showToast(String.format(R.string.synthesis_error, e.getLocalizedMessage))
+          makeToast(getString(R.string.synthesis_error, e.getLocalizedMessage)).show
           service.stop
       }
     } else service.stop)
@@ -278,7 +278,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
     inputText.setTextKeepState(source.subSequence(0, selectionStart) + tag +
       source.subSequence(selectionEnd, source.length))
     inputText.setSelection(selectionStart + position)
-    if (toast != null) showToast(toast)
+    if (toast != null) makeToast(toast).show
     false
   }
 
@@ -315,7 +315,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
         try startActivityForResult(new Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE)
           .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION).setType(mime), OPEN_TEXT)
         catch {
-          case e: ActivityNotFoundException => showToast(R.string.open_error_no_browser)
+          case e: ActivityNotFoundException => makeToast(R.string.open_error_no_browser).show
         }
         true
       case R.id.action_save =>
@@ -356,7 +356,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
       } catch {
         case e: IOException =>
           e.printStackTrace
-          showToast(String.format(R.string.save_error, e.getMessage))
+          makeToast(getString(R.string.save_error, e.getMessage)).show
       } finally if (output != null) try output.close catch {
         case e: IOException => e.printStackTrace
       }
@@ -364,7 +364,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
       try service.synthesizeToUri(getText, getStartOffset, uri) catch {
         case e: Exception =>
           e.printStackTrace
-          showToast(String.format(R.string.synthesis_error, e.getMessage))
+          makeToast(getString(R.string.synthesis_error, e.getMessage)).show
           service.stop
       }
   }

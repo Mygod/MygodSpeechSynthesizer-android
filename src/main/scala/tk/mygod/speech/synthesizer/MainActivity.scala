@@ -84,7 +84,7 @@ final class MainActivity extends FragmentStackActivity with LocationObservedActi
     input =>
       mainFragment.inputText.setText(IOUtils.readAllText(input))
       displayName = uri.getLastPathSegment
-    } else showToast(R.string.read_file_storage_denied)
+    } else makeToast(R.string.read_file_storage_denied).show
 
   override def onNewIntent(data: Intent) {
     super.onNewIntent(data)
