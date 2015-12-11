@@ -1,9 +1,9 @@
 package tk.mygod.speech.tts
 
-import android.content.{ContentUris, ContentProvider, ContentValues, UriMatcher}
+import android.content.{ContentUris, UriMatcher}
 import android.net.Uri
 import android.net.Uri.Builder
-import tk.mygod.util.MimeUtils
+import tk.mygod.content.StubProvider
 
 import scala.collection.mutable
 
@@ -11,7 +11,6 @@ import scala.collection.mutable
   * @author Mygod
   */
 object EarconsProvider {
-  private val TAG = "EarconsProvider"
   private val authority = "tk.mygod.speech.tts.provider"
   private val uriMatcher = new UriMatcher(0)
   uriMatcher.addURI(authority, "earcons/#", 0)

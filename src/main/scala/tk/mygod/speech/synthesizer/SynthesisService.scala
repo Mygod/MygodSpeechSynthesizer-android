@@ -5,7 +5,7 @@ import java.text.DateFormat
 import java.util.Calendar
 
 import android.app.Service
-import android.content.Intent
+import android.content.{IntentFilter, BroadcastReceiver, Intent}
 import android.net.Uri
 import android.os.{Handler, ParcelFileDescriptor}
 import android.support.annotation.IntDef
@@ -22,6 +22,8 @@ object SynthesisService {
   final val IDLE = 0
   final val SPEAKING = 1
   final val SYNTHESIZING = 2
+
+  private final val ACTION_STOP = "tk.mygod.speech.synthesizer.action.STOP"
 
   var instance: SynthesisService = _
 }
@@ -41,6 +43,7 @@ final class SynthesisService extends ServicePlus with OnTtsSynthesisCallbackList
   var currentStart: Int = -1
   var currentEnd: Int = -1
   private val handler = new Handler
+  private val stopListener: BroadcastReceiver = (context, intent) => stop
 
   private var _inBackground: Boolean = _
   def inBackground = _inBackground
@@ -69,13 +72,14 @@ final class SynthesisService extends ServicePlus with OnTtsSynthesisCallbackList
     val engineID = pref.getString("engine", "")
     engines = new AvailableTtsEngines(this)
     selectEngine(engineID)
+    registerReceiver(stopListener, new IntentFilter(ACTION_STOP))
     builder = new NotificationCompat.Builder(this).setContentTitle(R.string.notification_title)
       .setSmallIcon(R.drawable.ic_communication_message)
       .setColor(ContextCompat.getColor(this, R.color.material_primary_500))
       .setContentIntent(pendingIntent[MainActivity]).setCategory(NotificationCompat.CATEGORY_PROGRESS)
       .setVisibility(NotificationCompat.VISIBILITY_PUBLIC).setVibrate(new Array[Long](0))
       .addAction(new Action(R.drawable.ic_av_mic_off, R.string.action_stop,
-        pendingBroadcast("tk.mygod.speech.synthesizer.action.STOP")))
+        pendingBroadcast(new Intent(ACTION_STOP).setFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY))))
     if (enableSsmlDroid)
       try rawText = formatDefaultText(IOUtils.readAllText(getResources.openRawResource(R.raw.input_text_default)))
       catch {
@@ -87,6 +91,7 @@ final class SynthesisService extends ServicePlus with OnTtsSynthesisCallbackList
 
   override def onDestroy {
     engines.onDestroy
+    unregisterReceiver(stopListener)
     super.onDestroy
     instance = null
   }
