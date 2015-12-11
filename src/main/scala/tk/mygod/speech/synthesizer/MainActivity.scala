@@ -7,12 +7,11 @@ import android.content.pm.PackageManager
 import android.content.{ComponentName, Context, Intent}
 import android.media.AudioManager
 import android.net.Uri
-import android.os.{IBinder, Bundle}
+import android.os.{Bundle, IBinder}
 import android.provider.{MediaStore, OpenableColumns}
 import android.support.v13.app.FragmentCompat.OnRequestPermissionsResultCallback
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
-import android.util.Log
 import tk.mygod.app.SaveFileFragment.SaveFileCallback
 import tk.mygod.app.{FragmentStackActivity, LocationObservedActivity, SaveFileFragment}
 import tk.mygod.content.ServicePlusConnection
@@ -67,7 +66,7 @@ final class MainActivity extends FragmentStackActivity with LocationObservedActi
   protected override def onStart {
     super.onStart
     connection.service match {
-      case Some(service) => service.inBackground(true)
+      case Some(service) => service.inBackground(false)
       case _ =>
     }
   }
