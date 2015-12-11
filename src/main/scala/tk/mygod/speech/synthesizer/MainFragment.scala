@@ -70,16 +70,17 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
     mainFragment = null
   }
 
-  override def onCreateView(inflater: LayoutInflater, container: ViewGroup, savedInstanceState: Bundle) = {
-    val result = inflater.inflate(R.layout.fragment_main, container, false)
-    configureToolbar(result, R.string.app_name)
+  def layout = R.layout.fragment_main
+  override def onViewCreated(view: View, savedInstanceState: Bundle) {
+    super.onViewCreated(view, savedInstanceState)
+    configureToolbar(view, R.string.app_name)
     toolbar.inflateMenu(R.menu.main_fragment_actions)
     menu = toolbar.getMenu
     styleItem = menu.findItem(R.id.action_style)
     styleItem.setVisible(Build.version < 23 && enableSsmlDroid)
     toolbar.setOnMenuItemClickListener(this)
-    progressBar = result.findView(TR.progressBar)
-    fab = result.findView(TR.fab)
+    progressBar = view.findView(TR.progressBar)
+    fab = view.findView(TR.fab)
     fab.setOnClickListener(_ => if (service.status == SynthesisService.IDLE) {
       try service.speak(getText, getStartOffset) catch {
         case e: Exception =>
@@ -94,9 +95,9 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
         MetricsUtils.dp2px(activity, -8), true).show
       true
     })
-    pager = result.findView(TR.pager)
-    inputText = result.findView(TR.input_text)
-    textView = result.findView(TR.text_view)
+    pager = view.findView(TR.pager)
+    inputText = view.findView(TR.input_text)
+    textView = view.findView(TR.text_view)
     if (Build.version >= 23) {
       val callback2 = new Callback2 {
         def onCreateActionMode(mode: ActionMode, menu: Menu) = {
@@ -112,7 +113,6 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
     }
     val intent = activity.getIntent
     if (intent != null) activity.onNewIntent(intent)
-    result
   }
 
   override def onCreateContextMenu(menu: ContextMenu, v: View, menuInfo: ContextMenu.ContextMenuInfo) {
