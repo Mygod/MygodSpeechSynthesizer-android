@@ -32,21 +32,12 @@ object EarconsProvider {
     hash).build
 }
 
-final class EarconsProvider extends ContentProvider {
+final class EarconsProvider extends StubProvider {
   import EarconsProvider._
 
-  def delete(uri: Uri, selection: String, selectionArgs: Array[String]) = throw new UnsupportedOperationException
-  def insert(uri: Uri, values: ContentValues) = throw new UnsupportedOperationException
-  def onCreate = true
-  def query(uri: Uri, projection: Array[String], selection: String, selectionArgs: Array[String], sortOrder: String) =
-    throw new UnsupportedOperationException
-  def update(uri: Uri, values: ContentValues, selection: String, selectionArgs: Array[String]) =
-    throw new UnsupportedOperationException
-
-  def getType(uri: Uri) = uriMatcher.`match`(uri) match {
+  override def getType(uri: Uri) = uriMatcher.`match`(uri) match {
     case 0 => uriMapper.get(uri.getLastPathSegment.toLong) match {
-      case Some(realUri) => if (realUri.getScheme == "file") MimeUtils.getMimeType(realUri.toString)
-        else getContext.getContentResolver.getType(realUri)
+      case Some(realUri) => super.getType(realUri)
       case None => throw new IllegalArgumentException("Unknown Uri: " + uri)
     }
     case _ => throw new IllegalArgumentException("Invalid Uri: " + uri)
