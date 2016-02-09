@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="tk.mygod.speech.synthesizer" android:versionCode="378" android:versionName="2.2.19.378">
+          package="tk.mygod.speech.synthesizer" android:versionCode="378" android:versionName="2.3.0">
 
     <uses-sdk android:minSdkVersion="16" android:targetSdkVersion="23" />
     <uses-permission android:name="android.permission.INTERNET" />
