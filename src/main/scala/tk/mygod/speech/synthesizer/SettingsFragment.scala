@@ -2,6 +2,7 @@ package tk.mygod.speech.synthesizer
 
 import java.text.DecimalFormat
 
+import android.app.Activity
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.support.v4.content.ContextCompat
@@ -76,11 +77,19 @@ final class SettingsFragment extends ToolbarPreferenceFragment {
     })
   }
 
+  override def layout = R.layout.fragment_settings
+
   override def onViewCreated(view: View, savedInstanceState: Bundle) {
     super.onViewCreated(view, savedInstanceState)
     configureToolbar(view, R.string.settings)
     setNavigationIcon(ToolbarFragment.BACK)
     view.setBackgroundColor(ContextCompat.getColor(activity, R.color.material_purple_50))
+  }
+
+  override def onAttach(activity: Activity) {
+    //noinspection ScalaDeprecation
+    super.onAttach(activity)
+    activity.asInstanceOf[MainActivity].settingsFragment = this
   }
 
   private def updateVoices(legacy: Option[Boolean] = None) {

@@ -132,9 +132,9 @@ final class MainActivity extends FragmentStackActivity with LocationObservedActi
     }
 
   def showSettings {
-    if (settingsFragment == null) settingsFragment = new SettingsFragment
-    settingsFragment.setSpawnLocation(getLocationOnScreen)
-    push(settingsFragment)
+    val fragment = if (settingsFragment == null) new SettingsFragment else settingsFragment
+    fragment.setSpawnLocation(getLocationOnScreen)
+    push(fragment)
   }
 
   def showSave(mimeType: String, fileName: String, requestCode: Int) = if (Build.version < 19) {

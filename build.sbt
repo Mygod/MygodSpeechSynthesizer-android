@@ -18,4 +18,4 @@ resolvers += Resolver.sonatypeRepo("public")
 
 libraryDependencies ++= Seq(
   "com.android.support" % "support-v13" % "23.1.1",
-  "tk.mygod" %% "mygod-lib-android" % "1.3.7-SNAPSHOT")
+  "tk.mygod" %% "mygod-lib-android" % "1.3.10-SNAPSHOT")
