@@ -9,7 +9,6 @@ import android.media.AudioManager
 import android.net.Uri
 import android.os.{Bundle, IBinder}
 import android.provider.{MediaStore, OpenableColumns}
-import android.support.v13.app.FragmentCompat.OnRequestPermissionsResultCallback
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import tk.mygod.app.SaveFileFragment.SaveFileCallback
@@ -26,8 +25,7 @@ object MainActivity {
   private val PERMISSION_REQUEST_STORAGE = 0
 }
 
-final class MainActivity extends FragmentStackActivity with LocationObservedActivity with SaveFileCallback
-  with OnRequestPermissionsResultCallback {
+final class MainActivity extends FragmentStackActivity with LocationObservedActivity with SaveFileCallback {
   import MainActivity._
 
   private lazy val serviceIntent = intent[SynthesisService]

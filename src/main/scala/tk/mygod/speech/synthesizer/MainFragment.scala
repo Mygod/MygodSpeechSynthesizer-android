@@ -73,7 +73,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
   def layout = R.layout.fragment_main
   override def onViewCreated(view: View, savedInstanceState: Bundle) {
     super.onViewCreated(view, savedInstanceState)
-    configureToolbar(view, R.string.app_name)
+    configureToolbar(R.string.app_name)
     toolbar.inflateMenu(R.menu.main_fragment_actions)
     menu = toolbar.getMenu
     styleItem = menu.findItem(R.id.action_style)

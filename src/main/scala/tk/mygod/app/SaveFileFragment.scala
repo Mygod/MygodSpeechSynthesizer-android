@@ -102,8 +102,8 @@ final class SaveFileFragment(private var requestCode: Int, private var mimeType:
   def layout = R.layout.fragment_save_file
   override def onViewCreated(view: View, savedInstanceState: Bundle) {
     super.onViewCreated(view, savedInstanceState)
-    configureToolbar(view, R.string.fragment_save_file_title)
-    setNavigationIcon(ToolbarFragment.BACK)
+    configureToolbar(R.string.fragment_save_file_title)
+    setNavigationIcon(ToolbarTypedFindView.BACK)
     toolbar.inflateMenu(R.menu.save_file_actions)
     toolbar.setOnMenuItemClickListener(this)
     fileName = view.findView(TR.file_name)

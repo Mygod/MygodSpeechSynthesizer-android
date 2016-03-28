@@ -10,7 +10,7 @@ import android.support.v7.preference.Preference
 import android.text.style.TextAppearanceSpan
 import android.text.{SpannableStringBuilder, Spanned, TextUtils}
 import android.view.View
-import tk.mygod.app.{ToolbarFragment, ActivityPlus}
+import tk.mygod.app.{ActivityPlus, ToolbarTypedFindView}
 import tk.mygod.concurrent.FailureHandler
 import tk.mygod.os.Build
 import tk.mygod.preference._
@@ -81,8 +81,8 @@ final class SettingsFragment extends ToolbarPreferenceFragment {
 
   override def onViewCreated(view: View, savedInstanceState: Bundle) {
     super.onViewCreated(view, savedInstanceState)
-    configureToolbar(view, R.string.settings)
-    setNavigationIcon(ToolbarFragment.BACK)
+    configureToolbar(R.string.settings)
+    setNavigationIcon(ToolbarTypedFindView.BACK)
     view.setBackgroundColor(ContextCompat.getColor(activity, R.color.material_purple_50))
   }
 
@@ -145,7 +145,7 @@ final class SettingsFragment extends ToolbarPreferenceFragment {
         }
         voice.init
       }
-    } onFailure FailureHandler
+    } onComplete FailureHandler
   }
 
   override def onDisplayPreferenceDialog(preference: Preference) = preference match {

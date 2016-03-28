@@ -6,7 +6,7 @@ platformTarget in Android := "android-23"
 
 name := "speech.synthesizer"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.8"
 
 javacOptions ++= Seq("-source", "1.6", "-target", "1.6")
 
@@ -17,5 +17,4 @@ shrinkResources in Android := true
 resolvers += Resolver.sonatypeRepo("public")
 
 libraryDependencies ++= Seq(
-  "com.android.support" % "support-v13" % "23.1.1",
-  "tk.mygod" %% "mygod-lib-android" % "1.3.10")
+  "tk.mygod" %% "mygod-lib-android" % "1.3.11")
