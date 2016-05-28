@@ -13,6 +13,8 @@
     </group>
     <item android:id="@+id/action_save" android:title="@string/action_save"
           app:showAsAction="never" android:alphabeticShortcut="s" android:numericShortcut="3"/>
+    <item android:id="@+id/action_populate_sample" android:title="@string/action_populate_sample"
+          app:showAsAction="never" android:alphabeticShortcut="p" android:numericShortcut="4"/>
     <item android:id="@+id/action_settings" android:title="@string/settings"
-          app:showAsAction="never" android:alphabeticShortcut="m" android:numericShortcut="4"/>
+          app:showAsAction="never" android:alphabeticShortcut="m" android:numericShortcut="5"/>
 </menu>

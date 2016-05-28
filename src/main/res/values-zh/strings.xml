@@ -11,6 +11,7 @@
     <string name="action_synthesize_to_file">合成到文件</string>
     <string name="action_open">打开</string>
     <string name="action_save">保存</string>
+    <string name="action_populate_sample">显示样例</string>
     <string name="synthesis_error">合成失败：%s</string>
     <string name="open_error">打开失败：%s</string>
     <string name="open_error_no_browser">打开失败：要使用此功能，请下载一个可以选取文件的文件浏览器。</string>

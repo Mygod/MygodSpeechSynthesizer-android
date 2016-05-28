@@ -20,11 +20,12 @@ import android.view._
 import android.view.inputmethod.InputMethodManager
 import android.widget.TextView.BufferType
 import android.widget.{ProgressBar, Toast}
+import tk.mygod.CurrentApp
 import tk.mygod.app.ToolbarFragment
 import tk.mygod.os.Build
 import tk.mygod.speech.synthesizer.TypedResource._
 import tk.mygod.speech.tts.OnTtsSynthesisCallbackListener
-import tk.mygod.util.{MetricsUtils, MimeUtils}
+import tk.mygod.util.{IOUtils, MetricsUtils, MimeUtils}
 import tk.mygod.view.ViewPager
 
 /**
@@ -295,6 +296,17 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
     true
   }
 
+  private def formatDefaultText(pattern: String) = {
+    val calendar = Calendar.getInstance
+    val buildTime = CurrentApp.getBuildTime(activity)
+    calendar.setTime(buildTime)
+    String.format(pattern, CurrentApp.getVersionName(activity),
+      DateFormat.getDateInstance(DateFormat.FULL).format(buildTime),
+      DateFormat.getTimeInstance(DateFormat.FULL).format(buildTime), calendar.get(Calendar.YEAR): Integer,
+      calendar.get(Calendar.MONTH): Integer, calendar.get(Calendar.DAY_OF_MONTH): Integer,
+      calendar.get(Calendar.DAY_OF_WEEK): Integer, calendar.get(Calendar.HOUR_OF_DAY): Integer,
+      calendar.get(Calendar.MINUTE): Integer)
+  }
   def onMenuItemClick(item: MenuItem) = {
     val ssml = enableSsmlDroid
     val mime = if (ssml) "application/ssml+xml" else "text/plain"
@@ -323,6 +335,16 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
         var fileName = getSaveFileName
         if (!fileName.toLowerCase.endsWith(extension)) fileName += extension
         activity.showSave(mime, fileName, SAVE_TEXT)
+        true
+      case R.id.action_populate_sample =>
+        var rawText: String = null
+        if (enableSsmlDroid)
+          try rawText = formatDefaultText(IOUtils.readAllText(getResources.openRawResource(R.raw.input_text_default)))
+          catch {
+            case e: IOException => e.printStackTrace
+          }
+        if (rawText == null) rawText = formatDefaultText(R.string.input_text_default)
+        inputText.setText(rawText)
         true
       case R.id.action_settings =>
         activity.showSettings

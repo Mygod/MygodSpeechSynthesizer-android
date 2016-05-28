@@ -1,22 +1,18 @@
 package tk.mygod.speech.synthesizer
 
-import java.io.{FileOutputStream, IOException}
-import java.text.DateFormat
-import java.util.Calendar
+import java.io.FileOutputStream
 
 import android.app.Service
-import android.content.{IntentFilter, BroadcastReceiver, Intent}
+import android.content.{BroadcastReceiver, Intent, IntentFilter}
 import android.net.Uri
 import android.os.{Handler, ParcelFileDescriptor}
 import android.support.annotation.IntDef
 import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationCompat.Action
 import android.support.v4.content.ContextCompat
-import tk.mygod.CurrentApp
 import tk.mygod.app.ServicePlus
 import tk.mygod.speech.tts.{AvailableTtsEngines, OnTtsSynthesisCallbackListener, TtsEngine}
 import tk.mygod.text.{SsmlDroid, TextMappings}
-import tk.mygod.util.IOUtils
 
 object SynthesisService {
   final val IDLE = 0
@@ -56,17 +52,6 @@ final class SynthesisService extends ServicePlus with OnTtsSynthesisCallbackList
   @IntDef(Array(IDLE, SPEAKING, SYNTHESIZING))
   var status: Int = _
 
-  private def formatDefaultText(pattern: String) = {
-    val calendar = Calendar.getInstance
-    val buildTime = CurrentApp.getBuildTime(this)
-    calendar.setTime(buildTime)
-    String.format(pattern, CurrentApp.getVersionName(this),
-      DateFormat.getDateInstance(DateFormat.FULL).format(buildTime),
-      DateFormat.getTimeInstance(DateFormat.FULL).format(buildTime), calendar.get(Calendar.YEAR): Integer,
-      calendar.get(Calendar.MONTH): Integer, calendar.get(Calendar.DAY_OF_MONTH): Integer,
-      calendar.get(Calendar.DAY_OF_WEEK): Integer, calendar.get(Calendar.HOUR_OF_DAY): Integer,
-      calendar.get(Calendar.MINUTE): Integer)
-  }
   override def onCreate {
     super.onCreate
     val engineID = pref.getString("engine", "")
@@ -80,12 +65,6 @@ final class SynthesisService extends ServicePlus with OnTtsSynthesisCallbackList
       .setVisibility(NotificationCompat.VISIBILITY_PUBLIC).setVibrate(new Array[Long](0))
       .addAction(new Action(R.drawable.ic_av_mic_off, R.string.action_stop,
         pendingBroadcast(new Intent(ACTION_STOP).setFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY))))
-    if (enableSsmlDroid)
-      try rawText = formatDefaultText(IOUtils.readAllText(getResources.openRawResource(R.raw.input_text_default)))
-      catch {
-        case e: IOException => e.printStackTrace
-      }
-    if (rawText == null) rawText = formatDefaultText(R.string.input_text_default)
     instance = this
   }
 
