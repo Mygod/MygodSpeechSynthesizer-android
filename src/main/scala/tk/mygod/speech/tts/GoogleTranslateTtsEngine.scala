@@ -19,9 +19,13 @@ import scala.collection.{immutable, mutable}
  * @author Mygod
  */
 object GoogleTranslateTtsEngine {
-  private val voices = Array("af", "sq", "ar", "hy", "bs", "ca", "zh-CN", "zh-TW", "hr", "cs", "da", "nl", "en", "eo",
-                             "fi", "fr", "de", "el", "ht", "hi", "hu", "is", "id", "it", "ja", "la", "lv", "mk", "no",
-                             "pl", "pt", "ro", "ru", "sr", "sk", "es", "sw", "sv", "ta", "th", "tr", "vi", "cy")
+  private val voices = Array("af", "am", "ar", "be", "bg", "bn", "bs", "ca", "chr", "cs", "cy", "da", "de", "el", "en",
+                             "es", "et", "eu", "fa", "fi", "fr", "ga", "gl", "gu", "ha", "hi", "hr", "ht", "hu", "hy",
+                             "id", "ig", "is", "it", "iw", "jw", "ja", "ka", "kk", "km", "kn", "ko", "ku", "ky", "lb",
+                             "lo", "lt", "lv", "mg", "mi", "mk", "ml", "mn", "mr", "ms", "mt", "my", "ne", "nl", "no",
+                             "ny", "or", "pa", "pl", "ps", "pt", "ro", "ru", "rw", "sd", "si", "sk", "sl", "sn", "so",
+                             "sq", "sr", "st", "su", "sv", "sw", "ta", "te", "tg", "th", "tk", "tl", "tr", "tt", "ug",
+                             "uk", "ur", "uz", "vi", "wo", "xh", "yi", "yo", "yue", "zu", "zh-CN", "zh-TW")
                          .map(new LocaleWrapper(_).asInstanceOf[TtsVoice]).to[immutable.SortedSet]
 }
 
