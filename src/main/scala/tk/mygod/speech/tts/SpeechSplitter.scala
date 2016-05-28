@@ -24,7 +24,7 @@ object SpeechSplitter {
  * @param aggressiveMode Only used in SvoxPicoTtsEngine where sentences should be split to clarify where's being
  *                       synthesized.
  */
-final class SpeechSplitter(private val text: CharSequence, private var i: Int, private val maxLength: Int = 100,
+final class SpeechSplitter(private val text: CharSequence, private var i: Int, private val maxLength: Int = 200,
                            private val aggressiveMode: Boolean = false) extends Iterator[SpeechPart] {
   import SpeechSplitter._
   if (maxLength <= 0) throw new InvalidParameterException("maxLength should be a positive value.")
