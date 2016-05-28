@@ -198,7 +198,7 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
   def getMimeType = "audio/mpeg"
 
   private def getUrl(text: String) = "https://translate.google.com/translate_tts?client=tw-ob&ie=UTF-8&tl=" + voice.code +
-    "&q=" + URLEncoder.encode(text, "UTF-8")
+    "&q=" + URLEncoder.encode(text, "UTF-8") + "&ttsspeed=" + speechRate / 100.0
 
   def speak(text: CharSequence, startOffset: Int) {
     synthesizeToStreamTask = null
