@@ -1,7 +1,7 @@
 package tk.mygod.speech.tts
 
 import java.io._
-import java.net.{URL, URLEncoder}
+import java.net.{HttpURLConnection, URL, URLEncoder}
 import java.util.concurrent.{ArrayBlockingQueue, Semaphore}
 
 import android.content.Context
@@ -142,8 +142,13 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
       try {
         if (listener != null) listener.onTtsSynthesisCallback(part.start, part.end)
         val str = currentText.subSequence(part.start, part.end).toString
-        input = if (part.isEarcon) context.getContentResolver.openInputStream(str)
-          else new URL(getUrl(str)).openStream()
+        input = if (part.isEarcon) context.getContentResolver.openInputStream(str) else {
+          val conn = new URL(getUrl(str)).openConnection.asInstanceOf[HttpURLConnection]
+          conn.setRequestProperty("User-Agent", "stagefright/1.2 (Linux; Android 5.0)")
+          // conn.setRequestProperty("Referer", "http://translate.google.com")
+          //noinspection JavaAccessorMethodCalledAsEmptyParen
+          conn.getInputStream()
+        }
         IOUtils.copy(input, output)
         if (listener != null) listener.onTtsSynthesisCallback(part.end, part.end)
       } catch {
@@ -192,8 +197,8 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
     }
   def getMimeType = "audio/mpeg"
 
-  private def getUrl(text: String) =
-    "https://translate.google.com/translate_tts?ie=UTF-8&tl=" + voice.code + "&q=" + URLEncoder.encode(text, "UTF-8")
+  private def getUrl(text: String) = "https://translate.google.com/translate_tts?client=tw-ob&ie=UTF-8&tl=" + voice.code +
+    "&q=" + URLEncoder.encode(text, "UTF-8")
 
   def speak(text: CharSequence, startOffset: Int) {
     synthesizeToStreamTask = null
