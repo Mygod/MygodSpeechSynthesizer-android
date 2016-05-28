@@ -16,5 +16,6 @@ shrinkResources in Android := true
 
 resolvers += Resolver.sonatypeRepo("public")
 
-libraryDependencies ++= Seq(
-  "tk.mygod" %% "mygod-lib-android" % "1.3.11")
+proguardVersion in Android := "5.2.1"
+
+libraryDependencies += "tk.mygod" %% "mygod-lib-android" % "1.4.0"
