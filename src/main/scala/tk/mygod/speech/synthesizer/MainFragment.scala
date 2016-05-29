@@ -32,10 +32,12 @@ import tk.mygod.view.ViewPager
  * @author Mygod
  */
 object MainFragment {
-  val OPEN_TEXT = 0
-  val SAVE_TEXT = 1
-  val SAVE_SYNTHESIS = 2
-  val OPEN_EARCON = 3
+  private final val OPEN_TEXT = 0
+  private final val SAVE_TEXT = 1
+  private final val SAVE_SYNTHESIS = 2
+  private final val OPEN_EARCON = 3
+
+  private final val KEY_TEXT = "text"
 }
 
 final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackListener with OnMenuItemClickListener {
@@ -71,6 +73,10 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
     mainFragment = null
   }
 
+  override def onSaveInstanceState(outState: Bundle) {
+    super.onSaveInstanceState(outState)
+    outState.putCharSequence(KEY_TEXT, inputText.getText)
+  }
   def layout = R.layout.fragment_main
   override def onViewCreated(view: View, savedInstanceState: Bundle) {
     super.onViewCreated(view, savedInstanceState)
@@ -98,6 +104,7 @@ final class MainFragment extends ToolbarFragment with OnTtsSynthesisCallbackList
     })
     pager = view.findView(TR.pager)
     inputText = view.findView(TR.input_text)
+    if (savedInstanceState != null) inputText.setText(savedInstanceState.getCharSequence(KEY_TEXT))
     textView = view.findView(TR.text_view)
     if (Build.version >= 23) {
       val callback2 = new Callback2 {

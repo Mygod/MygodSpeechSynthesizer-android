@@ -22,19 +22,20 @@ import tk.mygod.util.IOUtils
  * @author Mygod
  */
 object MainActivity {
-  private val PERMISSION_REQUEST_STORAGE = 0
+  private final val PERMISSION_REQUEST_STORAGE = 0
 }
 
 final class MainActivity extends FragmentStackActivity with LocationObservedActivity with SaveFileCallback {
   import MainActivity._
 
   private lazy val serviceIntent = intent[SynthesisService]
-  val connection = new SynthesisServiceConnection
-  class SynthesisServiceConnection extends ServicePlusConnection[SynthesisService] {
+  val connection: ServicePlusConnection[SynthesisService] = new ServicePlusConnection[SynthesisService] {
     override def onServiceConnected(name: ComponentName, binder: IBinder) {
       super.onServiceConnected(name, binder)
-      mainFragment.inputText.setText(service.get.rawText)
-      mainFragment.textView.setText(service.get.rawText)
+      if (service.get.status != SynthesisService.IDLE) {
+        mainFragment.inputText.setText(service.get.rawText)
+        mainFragment.textView.setText(service.get.rawText)
+      }
       if (service.get.status == SynthesisService.IDLE) mainFragment.onTtsSynthesisFinished else {
         mainFragment.onTtsSynthesisStarting(service.get.currentText.length)
         if (service.get.prepared >= 0) mainFragment.onTtsSynthesisPrepared(service.get.prepared)
