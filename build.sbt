@@ -18,4 +18,4 @@ resolvers += Resolver.sonatypeRepo("public")
 
 proguardVersion in Android := "5.2.1"
 
-libraryDependencies += "tk.mygod" %% "mygod-lib-android" % "1.4.0"
+libraryDependencies += "tk.mygod" %% "mygod-lib-android" % "1.4.1"
