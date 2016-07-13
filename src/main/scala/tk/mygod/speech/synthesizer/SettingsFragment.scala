@@ -2,17 +2,13 @@ package tk.mygod.speech.synthesizer
 
 import java.text.DecimalFormat
 
-import android.app.Activity
 import android.graphics.drawable.Drawable
 import android.os.Bundle
-import android.support.v4.content.ContextCompat
 import android.support.v7.preference.Preference
 import android.text.style.TextAppearanceSpan
 import android.text.{SpannableStringBuilder, Spanned, TextUtils}
-import android.view.View
-import tk.mygod.app.{ActivityPlus, ToolbarTypedFindView}
+import tk.mygod.app.ActivityPlus
 import tk.mygod.concurrent.FailureHandler
-import tk.mygod.os.Build
 import tk.mygod.preference._
 import tk.mygod.speech.tts.{ConstantsWrapper, LocaleWrapper, TtsEngine}
 
@@ -23,9 +19,7 @@ import scala.concurrent.Future
 /**
  * @author Mygod
  */
-final class SettingsFragment extends ToolbarPreferenceFragment {
-  private lazy val activity = getActivity.asInstanceOf[MainActivity]
-  private lazy val service = activity.connection.service.orNull
+final class SettingsFragment extends PreferenceFragmentPlus {
   private var engine: IconListPreference = _
   private var voice: IconListPreference = _
 
@@ -34,22 +28,22 @@ final class SettingsFragment extends ToolbarPreferenceFragment {
     addPreferencesFromResource(R.xml.settings)
     engine = findPreference("engine").asInstanceOf[IconListPreference]
     engine.setOnPreferenceChangeListener((_, newValue) => {
-      service.selectEngine(newValue.toString)
+      SynthesisService.instance.selectEngine(newValue.toString)
       updateVoices()
       true
     })
     voice = findPreference("engine.voice").asInstanceOf[IconListPreference]
     voice.setOnPreferenceChangeListener((_, newValue) => {
-      service.selectVoice(newValue.toString)
-      voice.setSummary(service.engines.selectedEngine.getVoice.getDisplayName)
+      SynthesisService.instance.selectVoice(newValue.toString)
+      voice.setSummary(SynthesisService.instance.engines.selectedEngine.getVoice.getDisplayName)
       true
     })
-    val count = service.engines.size
+    val count = SynthesisService.instance.engines.size
     val names = new Array[CharSequence](count)
     val ids = new Array[CharSequence](count)
     val icons = new Array[Drawable](count)
     for (i <- 0 until count) {
-      val te: TtsEngine = service.engines(i)
+      val te: TtsEngine = SynthesisService.instance.engines(i)
       names(i) = te.getName
       ids(i) = te.getID
       icons(i) = te.getIcon
@@ -58,7 +52,7 @@ final class SettingsFragment extends ToolbarPreferenceFragment {
       engine.setEntries(names)
       engine.setEntryValues(ids)
       engine.setEntryIcons(icons)
-      engine.setValue(service.engines.selectedEngine.getID)
+      engine.setValue(SynthesisService.instance.engines.selectedEngine.getID)
       engine.init
       updateVoices()
     }
@@ -66,30 +60,10 @@ final class SettingsFragment extends ToolbarPreferenceFragment {
       updateVoices(Some(newValue.asInstanceOf[Boolean]))
       true
     })
-    if (Build.version < 23)
-      findPreference("text.enableSsmlDroid").setOnPreferenceChangeListener((_, newValue) => {
-        mainFragment.styleItem.setVisible(newValue.asInstanceOf[Boolean])
-        true
-      })
     findPreference("ssmlDroid.userGuidelines").setOnPreferenceClickListener(_ => {
       getActivity.asInstanceOf[ActivityPlus].launchUrl(R.string.url_ssmldroid_user_guidelines)
       true
     })
-  }
-
-  override def layout = R.layout.fragment_settings
-
-  override def onViewCreated(view: View, savedInstanceState: Bundle) {
-    super.onViewCreated(view, savedInstanceState)
-    configureToolbar(R.string.settings)
-    setNavigationIcon(ToolbarTypedFindView.BACK)
-    view.setBackgroundColor(ContextCompat.getColor(activity, R.color.material_purple_50))
-  }
-
-  override def onAttach(activity: Activity) {
-    //noinspection ScalaDeprecation
-    super.onAttach(activity)
-    activity.asInstanceOf[MainActivity].settingsFragment = this
   }
 
   private def updateVoices(legacy: Option[Boolean] = None) {
@@ -98,7 +72,7 @@ final class SettingsFragment extends ToolbarPreferenceFragment {
     voice.setValue(null)
     voice.setSummary(null)
     Future {
-      val voices = service.engines.selectedEngine.getVoices
+      val voices = SynthesisService.instance.engines.selectedEngine.getVoices
       val count = voices.size
       val names = new ArrayBuffer[CharSequence](count)
       val ids = new ArrayBuffer[CharSequence](count)
@@ -135,7 +109,7 @@ final class SettingsFragment extends ToolbarPreferenceFragment {
           ids.append(voice.getName)
         }
       }
-      val v = service.engines.selectedEngine.getVoice
+      val v = SynthesisService.instance.engines.selectedEngine.getVoice
       runOnUiThread {
         voice.setEntries(names.toArray)
         voice.setEntryValues(ids.toArray)
@@ -149,9 +123,9 @@ final class SettingsFragment extends ToolbarPreferenceFragment {
   }
 
   override def onDisplayPreferenceDialog(preference: Preference) = preference match {
-    case p: IconListPreference => displayPreferenceDialog(new IconListPreferenceDialogFragment(p.getKey))
-    case p: NumberPickerPreference => displayPreferenceDialog(new NumberPickerPreferenceDialogFragment(p.getKey))
-    case p: SeekBarPreference => displayPreferenceDialog(new SeekBarPreferenceDialogFragment(p.getKey))
+    case p: IconListPreference => displayPreferenceDialog(p.getKey, new IconListPreferenceDialogFragment())
+    case p: NumberPickerPreference => displayPreferenceDialog(p.getKey, new NumberPickerPreferenceDialogFragment())
+    case p: SeekBarPreference => displayPreferenceDialog(p.getKey, new SeekBarPreferenceDialogFragment())
     case _ => super.onDisplayPreferenceDialog(preference)
   }
 }

@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="tk.mygod.speech.synthesizer" android:versionCode="395" android:versionName="2.4.0">
+          xmlns:tools="http://schemas.android.com/tools"
+          package="tk.mygod.speech.synthesizer"
+          android:versionCode="395"
+          android:versionName="2.4.0"
+>
 
-    <uses-sdk android:minSdkVersion="16" android:targetSdkVersion="23" />
+    <uses-sdk android:minSdkVersion="16" android:targetSdkVersion="24" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
@@ -16,7 +20,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <intent-filter>
+            <intent-filter tools:ignore="GoogleAppIndexingWarning">
                 <action android:name="android.intent.action.EDIT" />
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.BROWSABLE" />
@@ -51,6 +55,14 @@
                 <data android:pathPattern="/.*\\.txt"/>
             </intent-filter>
         </activity>
+        <activity android:name=".SettingsActivity"
+                  android:label="@string/settings"
+                  android:parentActivityName=".MainActivity"
+        />
+        <activity android:name="tk.mygod.app.SaveFileActivity"
+                  android:label="@string/activity_save_file_title"
+                  android:parentActivityName=".MainActivity"
+        />
         <service android:name=".SynthesisService" />
         <provider android:authorities="tk.mygod.speech.tts.provider" android:exported="false"
                   android:name="tk.mygod.speech.tts.EarconsProvider" android:grantUriPermissions="true"/>

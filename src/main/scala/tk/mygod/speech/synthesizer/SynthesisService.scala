@@ -51,6 +51,7 @@ final class SynthesisService extends ServicePlus with OnTtsSynthesisCallbackList
   override def onStartCommand(intent: Intent, flags: Int, startId: Int) = Service.START_NOT_STICKY
   @IntDef(Array(IDLE, SPEAKING, SYNTHESIZING))
   var status: Int = _
+  var listener: OnTtsSynthesisCallbackListener = _
 
   override def onCreate {
     super.onCreate
@@ -151,11 +152,11 @@ final class SynthesisService extends ServicePlus with OnTtsSynthesisCallbackList
     engines.selectedEngine.pitch = pref.getInt("tweaks.pitch", 100)
     engines.selectedEngine.speechRate = pref.getInt("tweaks.speechRate", 100)
     engines.selectedEngine.pan = pref.getFloat("tweaks.pan", 0)
-    if (mainFragment != null) mainFragment.onTtsSynthesisStarting(length)
+    if (listener != null) listener.onTtsSynthesisStarting(length)
   }
   override def onTtsSynthesisPrepared(end: Int) {
     prepared = end
-    if (mainFragment != null) mainFragment.onTtsSynthesisPrepared(end)
+    if (listener != null) listener.onTtsSynthesisPrepared(end)
   }
   override def onTtsSynthesisCallback(start: Int, e: Int) {
     var end = e
@@ -164,7 +165,7 @@ final class SynthesisService extends ServicePlus with OnTtsSynthesisCallbackList
     showNotification(currentText.subSequence(start, end))
     currentStart = start
     currentEnd = end
-    if (mainFragment != null) mainFragment.onTtsSynthesisCallback(start, end)
+    if (listener != null) listener.onTtsSynthesisCallback(start, end)
   }
   override def onTtsSynthesisError(s: Int, e: Int) {
     var start = s
@@ -176,13 +177,13 @@ final class SynthesisService extends ServicePlus with OnTtsSynthesisCallbackList
     if (end < start) end = start
     if (start < end)
       handler.post(() => makeToast(String.format(R.string.synthesis_error, rawText.substring(start, end))).show)
-    if (mainFragment != null) mainFragment.onTtsSynthesisError(start, end)
+    if (listener != null) listener.onTtsSynthesisError(start, end)
   }
   override def onTtsSynthesisFinished {
     status = IDLE
     hideNotification
     if (descriptor != null) descriptor = null
-    if (mainFragment != null) mainFragment.onTtsSynthesisFinished
+    if (listener != null) listener.onTtsSynthesisFinished
     else stopSelf
   }
 }

@@ -20,7 +20,7 @@
     <string name="google_translate_tts_engine_name">Google 翻译合成</string>
     <string name="notification_title">合成中</string>
 
-    <string name="fragment_save_file_title">选择保存位置</string>
+    <string name="activity_save_file_title">选择保存位置</string>
     <string name="file_save_file_name_hint">文件名</string>
     <string name="action_create_dir">创建目录</string>
     <string name="dialog_overwrite_confirm_title">确定要覆盖此文件吗？</string>

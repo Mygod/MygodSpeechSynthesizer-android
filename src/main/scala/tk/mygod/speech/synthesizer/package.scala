@@ -11,7 +11,6 @@ import android.content.SharedPreferences
 package object synthesizer {
   var pref: SharedPreferences = _
   var editor: SharedPreferences.Editor = _
-  var mainFragment: MainFragment = _
 
   def enableSsmlDroid = pref.getBoolean("text.enableSsmlDroid", false)
   def enableSsmlDroid(value: Boolean) = pref.edit.putBoolean("text.enableSsmlDroid", value).apply

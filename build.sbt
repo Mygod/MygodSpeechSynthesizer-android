@@ -1,8 +1,6 @@
-import android.Keys._
-
 android.Plugin.androidBuild
 
-platformTarget in Android := "android-23"
+platformTarget := "android-24"
 
 name := "speech.synthesizer"
 
@@ -12,10 +10,18 @@ javacOptions ++= Seq("-source", "1.6", "-target", "1.6")
 
 scalacOptions ++= Seq("-target:jvm-1.6", "-Xexperimental")
 
-shrinkResources in Android := true
+shrinkResources := true
+
+typedViewHolders := false
+
+resConfigs := Seq("zh")
+
+useSupportVectors
 
 resolvers += Resolver.sonatypeRepo("public")
 
-proguardVersion in Android := "5.2.1"
+proguardVersion := "5.2.1"
 
-libraryDependencies += "tk.mygod" %% "mygod-lib-android" % "1.4.1"
+proguardCache := Seq()
+
+libraryDependencies += "tk.mygod" %% "mygod-lib-android" % "2.0.1-SNAPSHOT"
