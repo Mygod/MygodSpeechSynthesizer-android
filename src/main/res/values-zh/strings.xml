@@ -28,7 +28,7 @@
 
     <string name="settings">设置</string>
     <string name="settings_engines_languages">引擎与语言</string>
-    <string name="settings_preferred_engine">使用引擎</string>
+    <string name="settings_engine">引擎</string>
     <string name="settings_voice">声音</string>
     <string name="settings_tweaks">调整 (可能不支持)</string>
     <string name="settings_pitch">音高</string>

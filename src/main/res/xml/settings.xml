@@ -3,8 +3,10 @@
                                                 xmlns:app="http://schemas.android.com/apk/res-auto"
                                                 android:title="@string/settings">
     <android.support.v7.preference.PreferenceCategory android:title="@string/settings_engines_languages">
-        <tk.mygod.preference.IconListPreference android:key="engine" android:title="@string/settings_preferred_engine"
-                                                android:summary="%s"/>
+        <tk.mygod.preference.IconListPreference android:key="engine"
+                                                android:title="@string/settings_engine"
+                                                android:summary="%s"
+        />
         <tk.mygod.preference.IconListPreference android:key="engine.voice" android:title="@string/settings_voice"
                                                 android:persistent="false"/>
         <android.support.v14.preference.SwitchPreference android:key="engine.showLegacyVoices"

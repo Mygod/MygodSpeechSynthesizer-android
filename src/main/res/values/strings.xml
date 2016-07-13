@@ -32,7 +32,7 @@
 
     <string name="settings">Settings</string>
     <string name="settings_engines_languages">Engines &amp; Languages</string>
-    <string name="settings_preferred_engine">Preferred engine</string>
+    <string name="settings_engine">Engine</string>
     <string name="settings_voice">Voice</string>
     <string name="settings_show_legacy_voices">Show legacy voices</string>
     <string name="settings_show_legacy_voices_summary">Show voices that are designed for 4.x or lower versions.</string>
