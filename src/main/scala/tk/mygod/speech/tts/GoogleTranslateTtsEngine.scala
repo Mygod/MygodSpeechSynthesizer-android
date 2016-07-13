@@ -33,10 +33,12 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
   extends TtsEngine(context, selfDestructionListener) {
   import GoogleTranslateTtsEngine._
   private final class SpeakTask(private val currentText: CharSequence, private val startOffset: Int,
-                                finished: Unit => Unit = null) extends StoppableFuture {
+                                finished: Unit => Unit = null)
+    extends StoppableFuture with MediaPlayer.OnBufferingUpdateListener {
     private val playbackQueue = new ArrayBlockingQueue[AnyRef](29)
-    private val partMap = new mutable.HashMap[MediaPlayer, SpeechPart]
+    private val partMap = new mutable.WeakHashMap[MediaPlayer, (SpeechPart, Int)]
     private val manager = new PlayerManager
+    private val bufferLock = new Semaphore(1)
 
     override def stop {
       if (isStopped) return
@@ -59,25 +61,25 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
         var obj = playbackQueue.take
         while (obj.isInstanceOf[MediaPlayer]) {
           player = obj.asInstanceOf[MediaPlayer]
-          val part = partMap(player)
+          val part = partMap(player)._1
           try if (!isStopped) {
             if (listener != null) listener.onTtsSynthesisCallback(part.start, part.end)
             player.setOnCompletionListener(this)
             player.setOnErrorListener(this)
-            playLock.acquireUninterruptibly
-            player.start
-            playLock.acquireUninterruptibly
-            playLock.release
+            playLock.acquire()
+            player.start()
+            playLock.acquire()
+            playLock.release()
             if (listener != null) listener.onTtsSynthesisCallback(part.end, part.end)
           } catch {
             case e: Exception =>
-              e.printStackTrace
+              e.printStackTrace()
               if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
           } finally {
             try player.stop catch {
-              case e: IllegalStateException => e.printStackTrace
+              case e: IllegalStateException => e.printStackTrace()
             }
-            player.release
+            player.release()
             obj = playbackQueue.take
           }
         }
@@ -86,15 +88,15 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
       } finally if (listener != null) listener.onTtsSynthesisFinished
 
       def onCompletion(mp: MediaPlayer) {
-        val part = partMap(mp)
+        val part = partMap(mp)._1
         if (listener != null) listener.onTtsSynthesisCallback(part.end, part.end)
-        playLock.release
+        playLock.release()
       }
 
       def onError(mp: MediaPlayer, what: Int, extra: Int) = {
-        val part = partMap(mp)
+        val part = partMap(mp)._1
         if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
-        playLock.release
+        playLock.release()
         false
       }
     }
@@ -106,23 +108,26 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
         var player: MediaPlayer = null
         try {
           var failed = true
+          bufferLock.acquire()
           while (failed) try {
-            player = new MediaPlayer
+            player = new MediaPlayer()
             player.setAudioStreamType(AudioManager.STREAM_MUSIC)
+            partMap.put(player, (part, 0))
+            player.setOnBufferingUpdateListener(this)
             val str = currentText.subSequence(part.start, part.end).toString
             player.setDataSource(context, if (part.isEarcon) str else getUrl(str))
-            player.prepare
+            player.prepare()
             failed = false
           } catch {
             case e: IOException =>
               if (!("Prepare failed.: status=0x1" == e.getMessage)) throw e
-              player.release
+              player.release()
               Thread.sleep(1000)
           }
           if (isStopped) return
-          partMap.put(player, part)
           playbackQueue.put(player)
-          if (listener != null) listener.onTtsSynthesisPrepared(part.end)
+          bufferLock.acquire()
+          bufferLock.release()
         } catch {
           case e: Exception =>
             e.printStackTrace
@@ -135,6 +140,14 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
         e.printStackTrace
         if (listener != null) listener.onTtsSynthesisError(0, currentText.length)
     } finally if (manager != null) playbackQueue.add(new AnyRef)
+
+    def onBufferingUpdate(mp: MediaPlayer, percent: Int) {
+      val (part, previous) = partMap(mp)
+      if (percent <= previous) return // ignore another event triggered when playing
+      partMap(mp) = (part, percent)
+      if (listener != null) listener.onTtsSynthesisPrepared(part.start + part.length * percent / 100)
+      if (percent >= 100) bufferLock.release()
+    }
   }
 
   private class SynthesizeToStreamTask(private val currentText: CharSequence, private val startOffset: Int,
@@ -175,8 +188,8 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
   }
 
   private var voice: LocaleWrapper = new LocaleWrapper("en")
-  private var speakTask: SpeakTask = null
-  private var synthesizeToStreamTask: SynthesizeToStreamTask = null
+  private var speakTask: SpeakTask = _
+  private var synthesizeToStreamTask: SynthesizeToStreamTask = _
 
   def getVoices = voices
   def getVoice = voice

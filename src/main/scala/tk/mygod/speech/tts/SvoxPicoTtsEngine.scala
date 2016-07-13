@@ -184,14 +184,14 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
         if (isStopped) return
         if (!part.isEarcon) try {
           part.file = File.createTempFile("TEMP", ".wav", cacheDir)
-          synthesizeLock.acquireUninterruptibly
+          synthesizeLock.acquire()
           val cs = currentText.subSequence(part.start, part.end)
           val id = part.toString
           //noinspection ScalaDeprecation
           if (Build.version >= 21) tts.synthesizeToFile(cs, getParamsL(id), part.file, id)
           else tts.synthesizeToFile(cs.toString, getParams(id), part.file.getAbsolutePath)
-          synthesizeLock.acquireUninterruptibly
-          synthesizeLock.release  // wait for synthesis
+          synthesizeLock.acquire()
+          synthesizeLock.release()  // wait for synthesis
         } catch {
           case e: Exception =>
             e.printStackTrace
@@ -212,10 +212,10 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
   private var voices: immutable.SortedSet[TtsVoice] = _
   private var preInitSetVoice: String = _
   private var useNativeVoice = Build.version >= 21
-  private var speakTask: SpeakTask = null
-  private var synthesizeToStreamTask: SynthesizeToStreamTask = null
+  private var speakTask: SpeakTask = _
+  private var synthesizeToStreamTask: SynthesizeToStreamTask = _
 
-  initLock.acquireUninterruptibly
+  initLock.acquire()
   if (info == null) tts = new TextToSpeech(context, this) else {
     engineInfo = info
     tts = new TextToSpeech(context, this, info.name)
@@ -293,18 +293,18 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
     }
   }
 
-  private def waitForInit = {
-    initLock.acquireUninterruptibly
-    initLock.release
+  private def waitForInit() {
+    initLock.acquire()
+    initLock.release()
   }
 
   def getVoices = {
-    waitForInit
+    waitForInit()
     voices
   }
 
   def getVoice = {
-    waitForInit
+    waitForInit()
     //noinspection ScalaDeprecation
     if (useNativeVoice) wrap(tts.getVoice) else new LocaleVoice(tts.getLanguage)
   }

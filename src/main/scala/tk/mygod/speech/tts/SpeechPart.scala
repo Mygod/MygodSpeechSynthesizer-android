@@ -15,6 +15,8 @@ object SpeechPart {
 final class SpeechPart(val start: Int = -1, val end: Int = -1, val isEarcon: Boolean = false) {
   import SpeechPart._
 
+  lazy val length = end - start
+
   var file: File = _
   
   def equals(other: SpeechPart) = start == other.start && end == other.end && isEarcon == other.isEarcon
