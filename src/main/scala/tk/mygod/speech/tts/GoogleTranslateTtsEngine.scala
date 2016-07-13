@@ -120,7 +120,7 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
             failed = false
           } catch {
             case e: IOException =>
-              if (!("Prepare failed.: status=0x1" == e.getMessage)) throw e
+              if (e.getMessage != "Prepare failed.: status=0x1") throw e
               player.release()
               Thread.sleep(1000)
           }

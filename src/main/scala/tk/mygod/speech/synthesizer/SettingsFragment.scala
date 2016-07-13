@@ -123,7 +123,8 @@ final class SettingsFragment extends PreferenceFragmentPlus {
   }
 
   override def onDisplayPreferenceDialog(preference: Preference) = preference match {
-    case p: IconListPreference => displayPreferenceDialog(p.getKey, new IconListPreferenceDialogFragment())
+    case p: IconListPreference => displayPreferenceDialog(p.getKey,
+      if (p.getKey == "engine") new BottomSheetPreferenceDialogFragment() else new IconListPreferenceDialogFragment())
     case p: NumberPickerPreference => displayPreferenceDialog(p.getKey, new NumberPickerPreferenceDialogFragment())
     case p: SeekBarPreference => displayPreferenceDialog(p.getKey, new SeekBarPreferenceDialogFragment())
     case _ => super.onDisplayPreferenceDialog(preference)
