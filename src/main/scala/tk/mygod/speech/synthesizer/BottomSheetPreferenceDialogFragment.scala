@@ -24,11 +24,11 @@ final class BottomSheetPreferenceDialogFragment extends PreferenceDialogFragment
   private var clickedIndex = -1
 
   override def onCreateDialog(savedInstanceState: Bundle) = {
-    val dialog = new BottomSheetDialog(getContext, getTheme)
-    val context = getContext
-    val recycler = new RecyclerView(context)
+    val activity = getActivity
+    val dialog = new BottomSheetDialog(activity, getTheme)
+    val recycler = new RecyclerView(activity)
     recycler.setHasFixedSize(true)
-    recycler.setLayoutManager(new LinearLayoutManager(context))
+    recycler.setLayoutManager(new LinearLayoutManager(activity))
     recycler.setAdapter(new IconListAdapter(dialog))
     recycler.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
     dialog.setContentView(recycler)

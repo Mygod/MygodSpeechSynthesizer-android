@@ -37,7 +37,7 @@
                      android:visibility="invisible" android:layout_marginTop="-8dp" />
         <android.support.design.widget.FloatingActionButton
                 android:id="@+id/fab" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:src="@drawable/ic_av_mic_none" android:layout_gravity="end|bottom"
+                app:srcCompat="@drawable/ic_av_mic_none" android:layout_gravity="end|bottom"
                 android:layout_margin="16dp" app:elevation="6dp" app:pressedTranslationZ="6dp" app:borderWidth="0dp"
                 app:layout_behavior="tk.mygod.widget.ScrollingFloatingActionButtonBehavior"/>
     </android.support.design.widget.CoordinatorLayout>

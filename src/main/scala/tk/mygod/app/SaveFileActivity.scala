@@ -82,12 +82,12 @@ final class SaveFileActivity extends ToolbarActivity with TypedFindView with OnM
   }
 
   private def submit(v: View) = if (new File(currentDirectory, fileName.getText.toString).exists) {
-      var button: Button = null
-      button = new AlertDialog.Builder(this).setTitle(R.string.dialog_overwrite_confirm_title)
-        .setPositiveButton(android.R.string.yes, ((dialog, which) => confirm(button)): OnClickListener)
-        .setNegativeButton(android.R.string.no, null).show.getButton(DialogInterface.BUTTON_POSITIVE)
-      button.setOnTouchListener(LocationObserver)
-    } else confirm(v)
+    var button: Button = null
+    button = new AlertDialog.Builder(this).setTitle(R.string.dialog_overwrite_confirm_title)
+      .setPositiveButton(android.R.string.yes, ((_, _) => confirm(button)): OnClickListener)
+      .setNegativeButton(android.R.string.no, null).show.getButton(DialogInterface.BUTTON_POSITIVE)
+    button.setOnTouchListener(LocationObserver)
+  } else confirm(v)
 
   private def confirm(v: View) {
     setResult(0, new Intent().setData(Uri.fromFile(new File(currentDirectory, fileName.getText.toString))))
@@ -128,7 +128,7 @@ final class SaveFileActivity extends ToolbarActivity with TypedFindView with OnM
     case R.id.action_create_dir =>
       val text = new AppCompatEditText(this)
       new AlertDialog.Builder(this).setTitle(R.string.dialog_create_dir_title).setView(text)
-        .setPositiveButton(android.R.string.ok, ((dialog, which) =>
+        .setPositiveButton(android.R.string.ok, ((_, _) =>
           if (new File(currentDirectory, text.getText.toString).mkdirs) setCurrentDirectory()): OnClickListener)
         .setNegativeButton(android.R.string.cancel, null).show
       true
