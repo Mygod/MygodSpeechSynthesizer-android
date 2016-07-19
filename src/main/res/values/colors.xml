@@ -6,4 +6,6 @@
     <color name="material_purple_300_highlight">#857B1FA2</color>
     <color name="material_primary_500">@color/material_purple_500</color>
     <color name="material_primary_700">@color/material_purple_700</color>
+    <!-- Stupid preferences library fixes provided by: https://github.com/Gericop/Android-Support-Preference-V7-Fix -->
+    <color name="preference_fallback_accent_color">@color/material_accent_500</color>
 </resources>
