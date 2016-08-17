@@ -265,8 +265,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
     else if (useNativeVoice) {
       val voice = tts.getDefaultVoice
       if (voice != null) tts.setVoice(voice)
-    } else setVoice(new LocaleVoice(if (Build.version >= 18) tts.getDefaultLanguage
-    else context.getResources.getConfiguration.locale))
+    } else setVoice(new LocaleVoice(tts.getDefaultLanguage))
   }
 
   private def initVoices {
@@ -359,7 +358,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
   override def getName = engineInfo.label
   protected def getIconInternal = context.getPackageManager.getDrawable(engineInfo.name, engineInfo.icon, null)
   def getMimeType = "audio/x-wav"
-  def getMaxLength = if (Build.version >= 18) TextToSpeech.getMaxSpeechInputLength else 4000
+  def getMaxLength = TextToSpeech.getMaxSpeechInputLength
 
   @TargetApi(21)
   private def getParamsL(id: String) = {

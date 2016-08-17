@@ -26,7 +26,7 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.TextView.BufferType
 import android.widget.{ProgressBar, Toast}
 import tk.mygod.CurrentApp
-import tk.mygod.app.{CircularRevealActivity, SaveFileActivity, ToolbarActivity}
+import tk.mygod.app.{CircularRevealActivity, ToolbarActivity}
 import tk.mygod.content.ServicePlusConnection
 import tk.mygod.os.Build
 import tk.mygod.speech.tts.OnTtsSynthesisCallbackListener
@@ -387,7 +387,7 @@ final class MainActivity extends ToolbarActivity with TypedFindView
     val selection = source.subSequence(selectionStart, selectionEnd)
     val id = item.getItemId
     if (id == R.id.action_tts_earcon && selection.length == 0) startActivityForResult(
-      new Intent(if (Build.version >= 19) Intent.ACTION_OPEN_DOCUMENT else Intent.ACTION_GET_CONTENT)
+      new Intent(Intent.ACTION_OPEN_DOCUMENT)
         .addCategory(Intent.CATEGORY_OPENABLE).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         .addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION).setType("audio/*"), OPEN_EARCON)
     else if (processTag(id | item.getGroupId, source, selection, item.getTitleCondensed))
@@ -494,11 +494,10 @@ final class MainActivity extends ToolbarActivity with TypedFindView
     case SAVE_TEXT | SAVE_SYNTHESIS => if (resultCode == Activity.RESULT_OK) save(data.getData, requestCode)
     case OPEN_EARCON => if (resultCode == Activity.RESULT_OK) {
       val uri = data.getData
-      if (Build.version >= 19)
-        try getContentResolver.takePersistableUriPermission(uri,
-          data.getFlags & Intent.FLAG_GRANT_READ_URI_PERMISSION) catch {
-          case e: Exception => e.printStackTrace
-        }
+      try getContentResolver.takePersistableUriPermission(uri,
+        data.getFlags & Intent.FLAG_GRANT_READ_URI_PERMISSION) catch {
+        case e: Exception => e.printStackTrace
+      }
       processTag(R.id.action_tts_earcon, inputText.getText, uri.toString)
     } else processTag(R.id.action_tts_earcon, inputText.getText)
     case _ => super.onActivityResult(requestCode, resultCode, data)
@@ -552,8 +551,7 @@ final class MainActivity extends ToolbarActivity with TypedFindView
   override def makeSnackbar(text: CharSequence, duration: Int = Snackbar.LENGTH_LONG, view: View = fab) =
     super.makeSnackbar(text, duration, view)
 
-  def showSave(mimeType: String, fileName: String, requestCode: Int) = startActivityForResult((
-    if (Build.version < 19) intent[SaveFileActivity].putExtra(SaveFileActivity.EXTRA_CURRENT_DIRECTORY, lastSaveDir)
-    else new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE))
+  def showSave(mimeType: String, fileName: String, requestCode: Int) =
+    startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
       .putExtra(Intent.EXTRA_TITLE, fileName).setType(mimeType), requestCode)
 }
