@@ -2,7 +2,7 @@
 <android.support.v7.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
                                                 xmlns:app="http://schemas.android.com/apk/res-auto"
                                                 android:title="@string/settings">
-    <android.support.v7.preference.PreferenceCategory android:title="@string/settings_engines_languages">
+    <tk.mygod.preference.PreferenceCategory android:title="@string/settings_engines_languages">
         <tk.mygod.preference.IconListPreference android:key="engine"
                                                 android:title="@string/settings_engine"
                                                 android:summary="%s"
@@ -12,8 +12,8 @@
         <android.support.v14.preference.SwitchPreference android:key="engine.showLegacyVoices"
                                                          android:title="@string/settings_show_legacy_voices"
                                                          android:summary="@string/settings_show_legacy_voices_summary"/>
-    </android.support.v7.preference.PreferenceCategory>
-    <android.support.v7.preference.PreferenceCategory android:title="@string/settings_tweaks">
+    </tk.mygod.preference.PreferenceCategory>
+    <tk.mygod.preference.PreferenceCategory android:title="@string/settings_tweaks">
         <tk.mygod.preference.NumberPickerPreference android:key="tweaks.pitch"
                                                     android:title="@string/settings_pitch"
                                                     android:summary="@string/settings_pitch_summary"
@@ -33,8 +33,8 @@
                                                app:min="-1"
                                                app:reset="0"
         />
-    </android.support.v7.preference.PreferenceCategory>
-    <android.support.v7.preference.PreferenceCategory android:title="@string/settings_text">
+    </tk.mygod.preference.PreferenceCategory>
+    <tk.mygod.preference.PreferenceCategory android:title="@string/settings_text">
         <tk.mygod.preference.DropDownPreference android:key="text.start"
                                                 android:summary="%s"
                                                 android:defaultValue="beginning"
@@ -50,8 +50,8 @@
                                                          android:summary="@string/settings_enable_ssmldroid_summary"/>
         <android.support.v7.preference.Preference android:key="ssmlDroid.userGuidelines"
                                                   android:title="@string/settings_ssmldroid_user_guidelines"/>
-    </android.support.v7.preference.PreferenceCategory>
-    <android.support.v7.preference.PreferenceCategory android:title="@string/settings_appearance">
+    </tk.mygod.preference.PreferenceCategory>
+    <tk.mygod.preference.PreferenceCategory android:title="@string/settings_appearance">
         <tk.mygod.preference.DropDownPreference android:key="appearance.notificationType"
                                                 android:summary="%s"
                                                 android:defaultValue="0"
@@ -62,5 +62,5 @@
         <android.support.v14.preference.SwitchPreference android:key="appearance.ticker"
                                                          android:title="@string/settings_show_ticker"
                                                          android:summary="@string/settings_show_ticker_summary"/>
-    </android.support.v7.preference.PreferenceCategory>
+    </tk.mygod.preference.PreferenceCategory>
 </android.support.v7.preference.PreferenceScreen>
