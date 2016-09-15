@@ -3,8 +3,7 @@
               xmlns:app="http://schemas.android.com/apk/res-auto"
               android:layout_width="match_parent" android:layout_height="match_parent">
     <include layout="@layout/toolbar_light_dark" />
-    <android.support.design.widget.CoordinatorLayout android:id="@android:id/content"
-                                                     android:layout_width="match_parent"
+    <android.support.design.widget.CoordinatorLayout android:layout_width="match_parent"
                                                      android:layout_height="match_parent">
         <tk.mygod.view.ViewPager android:layout_width="match_parent" android:layout_height="match_parent"
                                  android:id="@+id/pager">
