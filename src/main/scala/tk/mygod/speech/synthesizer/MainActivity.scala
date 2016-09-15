@@ -61,7 +61,7 @@ final class MainActivity extends ToolbarActivity with TypedFindView
   private var selectionEnd: Int = _
   private lazy val inputMethodManager = systemService[InputMethodManager]
   private lazy val highlightSpan =
-    new BackgroundColorSpan(ContextCompat.getColor(this, R.color.material_purple_300_highlight))
+    new BackgroundColorSpan(ContextCompat.getColor(this, R.color.material_purple_a200_highlight))
 
   val connection: ServicePlusConnection[SynthesisService] = new ServicePlusConnection[SynthesisService] {
     override def onServiceConnected(name: ComponentName, binder: IBinder) {
