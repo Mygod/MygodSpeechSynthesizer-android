@@ -123,8 +123,7 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
               if (e.getMessage != "Prepare failed.: status=0x1") throw e
               player.release()
               Thread.sleep(1000)
-          }
-          if (isStopped) return
+          } finally if (isStopped) return
           playbackQueue.put(player)
           bufferLock.acquire()
           bufferLock.release()
