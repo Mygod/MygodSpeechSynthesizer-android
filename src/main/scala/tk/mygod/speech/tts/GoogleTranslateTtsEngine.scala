@@ -37,8 +37,8 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
     extends StoppableFuture with MediaPlayer.OnBufferingUpdateListener {
     private val playbackQueue = new ArrayBlockingQueue[AnyRef](29)
     private val partMap = new mutable.WeakHashMap[MediaPlayer, (SpeechPart, Int)]
+    private var bufferLock: Semaphore = _
     private val manager = new PlayerManager
-    private val bufferLock = new Semaphore(1)
 
     override def stop {
       if (isStopped) return
@@ -103,6 +103,7 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
 
     def work: Unit = try {
       if (isStopped) return
+      bufferLock = new Semaphore(1)
       for (part <- new SpeechSplitter(currentText, startOffset)) {
         if (isStopped) return
         var player: MediaPlayer = null
@@ -145,7 +146,7 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
       if (percent <= previous) return // ignore another event triggered when playing
       partMap(mp) = (part, percent)
       if (listener != null) listener.onTtsSynthesisPrepared(part.start + part.length * percent / 100)
-      if (percent >= 100) bufferLock.release()
+      if (percent >= 100 && bufferLock != null) bufferLock.release()
     }
   }
 
