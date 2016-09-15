@@ -24,4 +24,4 @@ proguardVersion := "5.2.1"
 
 proguardCache := Seq()
 
-libraryDependencies += "tk.mygod" %% "mygod-lib-android" % "3.0.0-SNAPSHOT"
+libraryDependencies += "tk.mygod" %% "mygod-lib-android" % "3.0.1-SNAPSHOT"
