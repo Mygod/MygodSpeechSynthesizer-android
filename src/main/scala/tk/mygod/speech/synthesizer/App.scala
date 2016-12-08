@@ -1,14 +1,33 @@
 package tk.mygod.speech.synthesizer
 
-import android.app.Application
-import android.content.Context
-import android.support.v7.app.AppCompatDelegate
+import java.text.SimpleDateFormat
+import java.util.Date
 
-class App extends Application {
+import android.content.{Context, SharedPreferences}
+import android.support.v7.app.AppCompatDelegate
+import be.mygod.app.ApplicationPlus
+
+class App extends ApplicationPlus {
+  import App._
+
   override def onCreate {
     super.onCreate
     AppCompatDelegate.setCompatVectorFromResourcesEnabled(true)
     pref = getSharedPreferences("settings", Context.MODE_PRIVATE)
     editor = pref.edit
   }
+}
+
+object App {
+  var pref: SharedPreferences = _
+  var editor: SharedPreferences.Editor = _
+
+  def enableSsmlDroid: Boolean = pref.getBoolean("text.enableSsmlDroid", false)
+  def enableSsmlDroid(value: Boolean): Unit = pref.edit.putBoolean("text.enableSsmlDroid", value).apply()
+  def ignoreSingleLineBreak: Boolean = pref.getBoolean("text.ignoreSingleLineBreak", false)
+  def lastSaveDir: String = pref.getString("fileSystem.lastSaveDir", null)
+
+  var displayName: String = _
+  def getSaveFileName: String =
+    if (displayName == null) new SimpleDateFormat("yyyyMMddHHmmssSSS").format(new Date) else displayName
 }

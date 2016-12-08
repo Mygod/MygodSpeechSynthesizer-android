@@ -1,18 +1,20 @@
-package tk.mygod.speech.tts
+package be.mygod.speech.tts
 
 import java.io._
 import java.net.{HttpURLConnection, URL, URLEncoder}
 import java.util.concurrent.{ArrayBlockingQueue, Semaphore}
 
 import android.content.Context
+import android.graphics.drawable.Drawable
 import android.media.{AudioManager, MediaPlayer}
 import android.support.v4.content.ContextCompat
 import android.text.TextUtils
-import tk.mygod.concurrent.StoppableFuture
+import be.mygod.concurrent.StoppableFuture
+import be.mygod.util.Conversions._
+import be.mygod.util.IOUtils
 import tk.mygod.speech.synthesizer.R
-import tk.mygod.util.Conversions._
-import tk.mygod.util.IOUtils
 
+import scala.collection.immutable.SortedSet
 import scala.collection.{immutable, mutable}
 
 /**
@@ -40,10 +42,10 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
     private var bufferLock: Semaphore = _
     private val manager = new PlayerManager
 
-    override def stop {
+    override def stop() {
       if (isStopped) return
-      super.stop
-      manager.stop
+      super.stop()
+      manager.stop()
     }
 
     private class PlayerManager extends StoppableFuture(finished)
@@ -51,13 +53,13 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
       var player: MediaPlayer = _
       private final val playLock = new Semaphore(1)
 
-      override def stop {
+      override def stop() {
         if (isStopped) return
-        super.stop
-        if (player != null) player.stop
+        super.stop()
+        if (player != null) player.stop()
       }
 
-      def work: Unit = try {
+      def work(): Unit = try {
         var obj = playbackQueue.take
         while (obj.isInstanceOf[MediaPlayer]) {
           player = obj.asInstanceOf[MediaPlayer]
@@ -76,7 +78,7 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
               e.printStackTrace()
               if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
           } finally {
-            try player.stop catch {
+            try player.stop() catch {
               case e: IllegalStateException => e.printStackTrace()
             }
             player.release()
@@ -84,8 +86,8 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
           }
         }
       } catch {
-        case e: InterruptedException => e.printStackTrace
-      } finally if (listener != null) listener.onTtsSynthesisFinished
+        case e: InterruptedException => e.printStackTrace()
+      } finally if (listener != null) listener.onTtsSynthesisFinished()
 
       def onCompletion(mp: MediaPlayer) {
         val part = partMap(mp)._1
@@ -93,7 +95,7 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
         playLock.release()
       }
 
-      def onError(mp: MediaPlayer, what: Int, extra: Int) = {
+      def onError(mp: MediaPlayer, what: Int, extra: Int): Boolean = {
         val part = partMap(mp)._1
         if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
         playLock.release()
@@ -130,14 +132,14 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
           bufferLock.release()
         } catch {
           case e: Exception =>
-            e.printStackTrace
-            if (player != null) player.release
+            e.printStackTrace()
+            if (player != null) player.release()
             if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
         }
       }
     } catch {
       case e: Exception =>
-        e.printStackTrace
+        e.printStackTrace()
         if (listener != null) listener.onTtsSynthesisError(0, currentText.length)
     } finally if (manager != null) playbackQueue.add(new AnyRef)
 
@@ -170,20 +172,20 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
         if (listener != null) listener.onTtsSynthesisCallback(part.end, part.end)
       } catch {
         case e: Exception =>
-          e.printStackTrace
+          e.printStackTrace()
           if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
-      } finally if (input != null) try input.close catch {
-        case e: IOException => e.printStackTrace
+      } finally if (input != null) try input.close() catch {
+        case e: IOException => e.printStackTrace()
       }
     } catch {
       case e: Exception =>
-        e.printStackTrace
+        e.printStackTrace()
         if (listener != null) listener.onTtsSynthesisError(0, currentText.length)
     } finally {
-      try output.close catch {
-        case e: IOException => e.printStackTrace
+      try output.close() catch {
+        case e: IOException => e.printStackTrace()
       }
-      if (listener != null) listener.onTtsSynthesisFinished
+      if (listener != null) listener.onTtsSynthesisFinished()
     }
   }
 
@@ -191,9 +193,9 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
   private var speakTask: SpeakTask = _
   private var synthesizeToStreamTask: SynthesizeToStreamTask = _
 
-  def getVoices = voices
-  def getVoice = voice
-  def setVoice(voice: TtsVoice) = {
+  def getVoices: SortedSet[TtsVoice] = voices
+  def getVoice: LocaleWrapper = voice
+  def setVoice(voice: TtsVoice): Boolean = {
     val result = voices.contains(voice)
     if (result) this.voice = voice.asInstanceOf[LocaleWrapper]
     result
@@ -207,10 +209,10 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
     false
   }
 
-  override def getName = context.getResources.getString(R.string.google_translate_tts_engine_name)
-  protected def getIconInternal = try context.getPackageManager.getApplicationIcon("com.google.android.apps.translate")
-    catch {
-      case e: Exception => ContextCompat.getDrawable(context, R.drawable.ic_google_translate)
+  override def getName: String = context.getResources.getString(R.string.google_translate_tts_engine_name)
+  protected def getIconInternal: Drawable =
+    try context.getPackageManager.getApplicationIcon("com.google.android.apps.translate") catch {
+      case _: Exception => ContextCompat.getDrawable(context, R.drawable.ic_google_translate)
     }
   def getMimeType = "audio/mpeg"
 
@@ -227,12 +229,12 @@ final class GoogleTranslateTtsEngine(context: Context, selfDestructionListener: 
     synthesizeToStreamTask = new SynthesizeToStreamTask(text, startOffset, output, _ => synthesizeToStreamTask = null)
   }
 
-  def stop {
-    if (speakTask != null) speakTask.stop
-    if (synthesizeToStreamTask != null) synthesizeToStreamTask.stop
+  def stop() {
+    if (speakTask != null) speakTask.stop()
+    if (synthesizeToStreamTask != null) synthesizeToStreamTask.stop()
   }
-  override def onDestroy {
-    stop
-    super.onDestroy
+  override def onDestroy() {
+    stop()
+    super.onDestroy()
   }
 }

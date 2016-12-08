@@ -1,4 +1,4 @@
-package tk.mygod.text
+package be.mygod.text
 
 import java.io.StringReader
 import java.lang.reflect.Field
@@ -7,10 +7,10 @@ import java.nio.CharBuffer
 import android.os.PersistableBundle
 import android.text.style.TtsSpan
 import android.text.{Editable, SpannableStringBuilder, Spanned}
+import be.mygod.os.Build
 import junit.framework.Assert
 import org.xml.sax._
 import org.xml.sax.helpers.{DefaultHandler, XMLReaderFactory}
-import tk.mygod.os.Build
 
 import scala.collection.mutable
 
@@ -29,7 +29,7 @@ object SsmlDroid {
 
     private def parseInt(value: String, patterns: Array[String], directOffset: Int, patternOffset: Int): Int = {
       try return value.toInt + directOffset catch {
-        case ignored: NumberFormatException =>
+        case _: NumberFormatException =>
       }
       if (patterns != null) {
         val length = patterns.length
@@ -46,11 +46,11 @@ object SsmlDroid {
   class Parser(private val source: String, private val customHandler: SsmlDroid.TagHandler,
                private val reader: XMLReader, private val ignoreSingleLineBreaks: Boolean) extends DefaultHandler {
     private val treeStack = new mutable.Stack[SsmlDroid.Tag]
-    private var locator: Locator = null
-    private var theCurrentLine: Field = null
-    private var theCurrentColumn: Field = null
-    private var lineNumber: Int = 0
-    private var offset: Int = 0
+    private var locator: Locator = _
+    private var theCurrentLine: Field = _
+    private var theCurrentColumn: Field = _
+    private var lineNumber: Int = _
+    private var offset: Int = _
     var Mappings: TextMappings = new TextMappings
     var Result: SpannableStringBuilder = new SpannableStringBuilder
 
@@ -66,14 +66,14 @@ object SsmlDroid {
       }
       catch {
         case exc: NoSuchFieldException =>
-          exc.printStackTrace
+          exc.printStackTrace()
           locator = rollback
       }
     }
 
     override def startElement(uri: String, localName: String, qName: String, attributes: Attributes) {
       val name = localName.toLowerCase
-      if (customHandler != null && customHandler.handleTag(true, localName, Result, reader)) return
+      if (customHandler != null && customHandler.handleTag(opening = true, localName, Result, reader)) return
       if ("earcon" == name) {
         treeStack.push(new SsmlDroid.Tag("earcon", new EarconSpan, Result.length))
         return
@@ -232,7 +232,7 @@ object SsmlDroid {
     override def endElement(uri: String, localName: String, qName: String) {
       val tag = treeStack.pop
       if (tag.Span != null) Result.setSpan(tag.Span, tag.Position, Result.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-      else if (customHandler != null) customHandler.handleTag(false, localName, Result, reader)
+      else if (customHandler != null) customHandler.handleTag(opening = false, localName, Result, reader)
     }
 
     override def characters(ch: Array[Char], start: Int, length: Int) {
@@ -263,7 +263,8 @@ object SsmlDroid {
     }
   }
 
-  def fromSsml(source: String, ignoreSingleLineBreaks: Boolean = false, customHandler: SsmlDroid.TagHandler = null) = {
+  def fromSsml(source: String, ignoreSingleLineBreaks: Boolean = false,
+               customHandler: SsmlDroid.TagHandler = null): Parser = {
     val src = String.format("<speak>%s</speak>", source)
     val reader = XMLReaderFactory.createXMLReader("org.ccil.cowan.tagsoup.Parser")
     val result = new SsmlDroid.Parser(src, customHandler, reader, ignoreSingleLineBreaks)

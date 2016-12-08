@@ -1,9 +1,10 @@
-package tk.mygod.speech.tts
+package be.mygod.speech.tts
 
 import android.content.{ContentUris, UriMatcher}
 import android.net.Uri
 import android.net.Uri.Builder
-import tk.mygod.content.StubProvider
+import android.os.ParcelFileDescriptor
+import be.mygod.content.StubProvider
 
 import scala.collection.mutable
 
@@ -11,7 +12,7 @@ import scala.collection.mutable
   * @author Mygod
   */
 object EarconsProvider {
-  private val authority = "tk.mygod.speech.tts.provider"
+  private val authority = "be.mygod.speech.tts.provider"
   private val uriMatcher = new UriMatcher(0)
   uriMatcher.addURI(authority, "earcons/#", 0)
 
@@ -22,26 +23,26 @@ object EarconsProvider {
     h & 0x7FFFFFFFFFFFFFFFL // drop the minus sign
   }
   val uriMapper = new mutable.LongMap[Uri]
-  def addUri(uri: Uri) = {
+  def addUri(uri: Uri): Long = {
     val hash = hashCode(uri.toString)
     uriMapper(hash) = uri
     hash
   }
-  def getUri(hash: Long) = ContentUris.appendId(new Builder().scheme("content").authority(authority).path("earcons"),
-    hash).build
+  def getUri(hash: Long): Uri =
+    ContentUris.appendId(new Builder().scheme("content").authority(authority).path("earcons"), hash).build
 }
 
 final class EarconsProvider extends StubProvider {
   import EarconsProvider._
 
-  override def getType(uri: Uri) = uriMatcher.`match`(uri) match {
+  override def getType(uri: Uri): String = uriMatcher.`match`(uri) match {
     case 0 => uriMapper.get(uri.getLastPathSegment.toLong) match {
       case Some(realUri) => super.getType(realUri)
       case None => throw new IllegalArgumentException("Unknown Uri: " + uri)
     }
     case _ => throw new IllegalArgumentException("Invalid Uri: " + uri)
   }
-  override def openFile(uri: Uri, mode: String) = uriMatcher.`match`(uri) match {
+  override def openFile(uri: Uri, mode: String): ParcelFileDescriptor = uriMatcher.`match`(uri) match {
     case 0 => uriMapper.get(uri.getLastPathSegment.toLong) match {
       case Some(realUri) => getContext.getContentResolver.openFileDescriptor(realUri, mode)
       case None => throw new IllegalArgumentException("Unknown Uri: " + uri)

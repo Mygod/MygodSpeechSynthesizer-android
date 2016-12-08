@@ -1,8 +1,8 @@
-package tk.mygod.speech.tts
+package be.mygod.speech.tts
 
 import java.util.Locale
 
-import tk.mygod.util.LocaleUtils
+import be.mygod.util.LocaleUtils
 
 import scala.collection.mutable
 
@@ -10,8 +10,8 @@ import scala.collection.mutable
  * @author Mygod
  */
 class LocaleWrapper extends TtsVoice {
-  protected final var locale: Locale = null
-  final var code: String = null
+  protected final var locale: Locale = _
+  final var code: String = _
 
   private[tts] def this(loc: Locale) {
     this()
@@ -24,11 +24,11 @@ class LocaleWrapper extends TtsVoice {
     locale = LocaleUtils.parseLocale(code)
   }
 
-  def getFeatures = mutable.Set.empty[String]
+  def getFeatures: mutable.Set[String] = mutable.Set.empty[String]
   def getLatency = 300
-  def getLocale = locale
-  def getName = code
+  def getLocale: Locale = locale
+  def getName: String = code
   def getQuality = 300
   def isNetworkConnectionRequired = true
-  def getDisplayName = locale.getDisplayName
+  def getDisplayName: String = locale.getDisplayName
 }

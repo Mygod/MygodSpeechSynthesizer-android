@@ -10,8 +10,8 @@ import android.support.v7.widget.{LinearLayoutManager, RecyclerView}
 import android.view.ViewGroup.LayoutParams
 import android.view.{LayoutInflater, View, ViewGroup}
 import android.widget.TextView
-import tk.mygod.preference.IconListPreference
-import tk.mygod.util.MetricsUtils
+import be.mygod.preference.IconListPreference
+import be.mygod.util.MetricsUtils
 
 /**
   * @author Mygod
@@ -23,7 +23,7 @@ final class BottomSheetPreferenceDialogFragment extends PreferenceDialogFragment
   private lazy val entryIcons: Array[Drawable] = preference.getEntryIcons
   private var clickedIndex = -1
 
-  override def onCreateDialog(savedInstanceState: Bundle) = {
+  override def onCreateDialog(savedInstanceState: Bundle): BottomSheetDialog = {
     val activity = getActivity
     val dialog = new BottomSheetDialog(activity, getTheme)
     val recycler = new RecyclerView(activity)
@@ -35,7 +35,7 @@ final class BottomSheetPreferenceDialogFragment extends PreferenceDialogFragment
     dialog
   }
 
-  def onDialogClosed(positiveResult: Boolean) = if (clickedIndex >= 0) {
+  def onDialogClosed(positiveResult: Boolean): Unit = if (clickedIndex >= 0) {
     val value = preference.getEntryValues()(clickedIndex).toString
     if (preference.callChangeListener(value)) preference.setValue(value)
   }
@@ -51,7 +51,7 @@ final class BottomSheetPreferenceDialogFragment extends PreferenceDialogFragment
       view.setOnClickListener(this)
       val typedArray = dialog.getContext.obtainStyledAttributes(Array(android.R.attr.selectableItemBackground))
       view.setBackgroundResource(typedArray.getResourceId(0, 0))
-      typedArray.recycle
+      typedArray.recycle()
     }
 
     def bind(i: Int, selected: Boolean = false) {
@@ -66,9 +66,9 @@ final class BottomSheetPreferenceDialogFragment extends PreferenceDialogFragment
     }
   }
   private final class IconListAdapter(dialog: BottomSheetDialog) extends RecyclerView.Adapter[IconListViewHolder] {
-    def getItemCount = entries.length
-    def onBindViewHolder(vh: IconListViewHolder, i: Int) = i match {
-      case 0 => vh.bind(index, true)
+    def getItemCount: Int = entries.length
+    def onBindViewHolder(vh: IconListViewHolder, i: Int): Unit = i match {
+      case 0 => vh.bind(index, selected = true)
       case _ if i > index => vh.bind(i)
       case _ => vh.bind(i - 1)
     }

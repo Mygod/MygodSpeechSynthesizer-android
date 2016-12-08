@@ -1,4 +1,4 @@
-package tk.mygod.speech.tts
+package be.mygod.speech.tts
 
 import java.io.{File, FileOutputStream}
 
@@ -17,7 +17,7 @@ abstract class TtsEngine(protected var context: Context,
   def setVoice(voice: TtsVoice): Boolean
   def setVoice(voice: String): Boolean
 
-  private var icon: Drawable = null
+  private var icon: Drawable = _
   def getID: String = getClass.getSimpleName
   def getName: String = getID
   def getIcon: Drawable = {
@@ -26,8 +26,8 @@ abstract class TtsEngine(protected var context: Context,
   }
   protected def getIconInternal: Drawable
 
-  protected var listener: OnTtsSynthesisCallbackListener = null
-  def setSynthesisCallbackListener(listener: OnTtsSynthesisCallbackListener) = this.listener = listener
+  protected var listener: OnTtsSynthesisCallbackListener = _
+  def setSynthesisCallbackListener(listener: OnTtsSynthesisCallbackListener): Unit = this.listener = listener
 
   def getMimeType: String
 
@@ -37,8 +37,8 @@ abstract class TtsEngine(protected var context: Context,
 
   def speak(text: CharSequence, startOffset: Int)
   def synthesizeToStream(text: CharSequence, startOffset: Int, output: FileOutputStream, cacheDir: File)
-  def stop
-  def onDestroy = _destroyed = true
+  def stop()
+  def onDestroy(): Unit = _destroyed = true
   private var _destroyed = false
-  def destroyed = _destroyed
+  def destroyed: Boolean = _destroyed
 }

@@ -1,27 +1,24 @@
-android.Plugin.androidBuild
-
-platformTarget := "android-24"
-
-name := "speech.synthesizer"
-
 scalaVersion := "2.11.8"
 
-javacOptions ++= Seq("-source", "1.6", "-target", "1.6")
+enablePlugins(AndroidApp)
+android.useSupportVectors
 
-scalacOptions ++= Seq("-target:jvm-1.6", "-Xexperimental")
+name := "speech.synthesizer"
+version := "2.4.2"
+versionCode := Some(407)
 
-shrinkResources := true
+platformTarget := "android-25"
 
-typedViewHolders := false
+compileOrder := CompileOrder.JavaThenScala
+javacOptions ++= "-source" :: "1.7" :: "-target" :: "1.7" :: Nil
+scalacOptions ++= "-target:jvm-1.7" :: "-Xexperimental" :: Nil
 
-resConfigs := Seq("zh")
-
-useSupportVectors
-
-resolvers += Resolver.sonatypeRepo("public")
-
-proguardVersion := "5.2.1"
-
+proguardVersion := "5.3.2"
 proguardCache := Seq()
 
-libraryDependencies += "tk.mygod" %% "mygod-lib-android" % "3.0.1"
+shrinkResources := true
+typedViewHolders := false
+resConfigs := Seq("zh-rCN")
+
+resolvers ++= Seq(Resolver.jcenterRepo, Resolver.sonatypeRepo("public"))
+libraryDependencies += "be.mygod" %% "mygod-lib-android" % "4.0.4-SNAPSHOT"

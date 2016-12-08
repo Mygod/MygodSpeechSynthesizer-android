@@ -2,8 +2,8 @@ package tk.mygod.speech.synthesizer
 
 import android.content.Context
 import android.os.Bundle
-import tk.mygod.app.{CircularRevealActivity, ToolbarActivity}
-import tk.mygod.content.ServicePlusConnection
+import be.mygod.app.{CircularRevealActivity, ToolbarActivity}
+import be.mygod.content.ServicePlusConnection
 
 /**
   * @author Mygod

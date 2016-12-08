@@ -10,9 +10,9 @@ import android.support.annotation.IntDef
 import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationCompat.Action
 import android.support.v4.content.ContextCompat
-import tk.mygod.app.ServicePlus
-import tk.mygod.speech.tts.{AvailableTtsEngines, OnTtsSynthesisCallbackListener, TtsEngine}
-import tk.mygod.text.{SsmlDroid, TextMappings}
+import be.mygod.app.ServicePlus
+import be.mygod.speech.tts.{AvailableTtsEngines, OnTtsSynthesisCallbackListener, TtsEngine}
+import be.mygod.text.{SsmlDroid, TextMappings}
 
 object SynthesisService {
   final val IDLE = 0
@@ -39,13 +39,13 @@ final class SynthesisService extends ServicePlus with OnTtsSynthesisCallbackList
   var currentStart: Int = -1
   var currentEnd: Int = -1
   private val handler = new Handler
-  private val stopListener: BroadcastReceiver = (context, intent) => stop
+  private val stopListener: BroadcastReceiver = (_, _) => stop()
 
   private var _inBackground: Boolean = _
-  def inBackground = _inBackground
+  def inBackground: Boolean = _inBackground
   def inBackground(value: Boolean) {
     _inBackground = value
-    if (status != IDLE) if (value) showNotification() else hideNotification
+    if (status != IDLE) if (value) showNotification() else hideNotification()
   }
 
   override def onStartCommand(intent: Intent, flags: Int, startId: Int) = Service.START_NOT_STICKY
@@ -53,9 +53,9 @@ final class SynthesisService extends ServicePlus with OnTtsSynthesisCallbackList
   var status: Int = _
   var listener: OnTtsSynthesisCallbackListener = _
 
-  override def onCreate {
-    super.onCreate
-    val engineID = pref.getString("engine", "")
+  override def onCreate() {
+    super.onCreate()
+    val engineID = App.pref.getString("engine", "")
     engines = new AvailableTtsEngines(this)
     selectEngine(engineID)
     registerReceiver(stopListener, new IntentFilter(ACTION_STOP))
@@ -69,10 +69,10 @@ final class SynthesisService extends ServicePlus with OnTtsSynthesisCallbackList
     instance = this
   }
 
-  override def onDestroy {
-    engines.onDestroy
+  override def onDestroy() {
+    engines.onDestroy()
     unregisterReceiver(stopListener)
-    super.onDestroy
+    super.onDestroy()
     instance = null
   }
 
@@ -80,43 +80,41 @@ final class SynthesisService extends ServicePlus with OnTtsSynthesisCallbackList
     if (text != null) {
       lastText = text.toString.replaceAll("\\s+", " ")
       builder.setContentText(lastText)
-        .setTicker(if (pref.getBoolean("appearance.ticker", false)) lastText else null)
+        .setTicker(if (App.pref.getBoolean("appearance.ticker", false)) lastText else null)
     }
     if (inBackground) {
       startService(intent[SynthesisService])
       startForeground(1, new NotificationCompat.BigTextStyle(builder.setWhen(System.currentTimeMillis)
-        .setPriority(pref.getString("appearance.notificationType", "0").toInt)).bigText(lastText).build)
+        .setPriority(App.pref.getString("appearance.notificationType", "0").toInt)).bigText(lastText).build)
     }
   }
-  private def hideNotification {
-    stopSelf
+  private def hideNotification() {
+    stopSelf()
     stopForeground(true)
   }
 
   def selectEngine(id: String) {
-    stop
+    stop()
     if (!engines.selectEngine(id)) return
-    editor.putString("engine", id)
-    editor.apply
-    engines.selectedEngine.setVoice(pref.getString("engine." + id, ""))
+    App.editor.putString("engine", id).apply()
+    engines.selectedEngine.setVoice(App.pref.getString("engine." + id, ""))
   }
 
   def selectVoice(voice: String): Unit = selectVoice(engines.selectedEngine, voice)
   def selectVoice(engine: TtsEngine, voice: String) {
     engine.setVoice(voice)
-    editor.putString("engine." + engine.getID, engine.getVoice.getName)
-    editor.apply
+    App.editor.putString("engine." + engine.getID, engine.getVoice.getName).apply()
   }
 
   def prepare(text: String) {
     rawText = text
-    if (enableSsmlDroid) {
-      val parser = SsmlDroid.fromSsml(text, ignoreSingleLineBreak, null)
+    if (App.enableSsmlDroid) {
+      val parser = SsmlDroid.fromSsml(text, App.ignoreSingleLineBreak, null)
       mappings = parser.Mappings
       currentText = parser.Result
     } else {
       mappings = null
-      currentText = if (ignoreSingleLineBreak) text.replaceAll("(?<!\\n)(\\n)(?!\\n)", " ") else text
+      currentText = if (App.ignoreSingleLineBreak) text.replaceAll("(?<!\\n)(\\n)(?!\\n)", " ") else text
     }
     prepared = -1
     currentStart = -1
@@ -141,17 +139,17 @@ final class SynthesisService extends ServicePlus with OnTtsSynthesisCallbackList
     onTtsSynthesisStarting(currentText.length)
     engines.selectedEngine.synthesizeToStream(currentText, startOffset, output, getCacheDir)
   }
-  def stop {
-    engines.selectedEngine.stop
-    onTtsSynthesisFinished
+  def stop() {
+    engines.selectedEngine.stop()
+    onTtsSynthesisFinished()
   }
 
   override def onTtsSynthesisStarting(length: Int) {
     builder.setProgress(0, length, true)
     textLength = length
-    engines.selectedEngine.pitch = pref.getInt("tweaks.pitch", 100)
-    engines.selectedEngine.speechRate = pref.getInt("tweaks.speechRate", 100)
-    engines.selectedEngine.pan = pref.getFloat("tweaks.pan", 0)
+    engines.selectedEngine.pitch = App.pref.getInt("tweaks.pitch", 100)
+    engines.selectedEngine.speechRate = App.pref.getInt("tweaks.speechRate", 100)
+    engines.selectedEngine.pan = App.pref.getFloat("tweaks.pan", 0)
     if (listener != null) listener.onTtsSynthesisStarting(length)
   }
   override def onTtsSynthesisPrepared(end: Int) {
@@ -171,19 +169,19 @@ final class SynthesisService extends ServicePlus with OnTtsSynthesisCallbackList
     var start = s
     var end = e
     if (mappings != null) {
-      start = mappings.getSourceOffset(start, false)
-      end = mappings.getSourceOffset(end, true)
+      start = mappings.getSourceOffset(start, preferLeft = false)
+      end = mappings.getSourceOffset(end, preferLeft = true)
     }
     if (end < start) end = start
     if (start < end)
-      handler.post(() => makeToast(String.format(R.string.synthesis_error, rawText.substring(start, end))).show)
+      handler.post(() => makeToast(String.format(R.string.synthesis_error, rawText.substring(start, end))).show())
     if (listener != null) listener.onTtsSynthesisError(start, end)
   }
-  override def onTtsSynthesisFinished {
+  override def onTtsSynthesisFinished() {
     status = IDLE
-    hideNotification
+    hideNotification()
     if (descriptor != null) descriptor = null
-    if (listener != null) listener.onTtsSynthesisFinished
-    else stopSelf
+    if (listener != null) listener.onTtsSynthesisFinished()
+    else stopSelf()
   }
 }

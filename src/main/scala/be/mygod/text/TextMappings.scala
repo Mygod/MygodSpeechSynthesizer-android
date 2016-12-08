@@ -1,4 +1,4 @@
-package tk.mygod.text
+package be.mygod.text
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -34,7 +34,7 @@ class TextMappings {
    *                   Otherwise, go as right as possible.
    * @return Source offset.
    */
-  def getSourceOffset(targetOffset: Int, preferLeft: Boolean) = {
+  def getSourceOffset(targetOffset: Int, preferLeft: Boolean): Int = {
     var l = 0
     var r = mappings.size
     while (l < r) {
@@ -51,7 +51,7 @@ class TextMappings {
    * @param sourceOffset Source offset.
    * @return Target offset.
    */
-  def getTargetOffset(sourceOffset: Int) = {
+  def getTargetOffset(sourceOffset: Int): Int = {
     var l = 0
     var r = mappings.size
     while (l < r) {

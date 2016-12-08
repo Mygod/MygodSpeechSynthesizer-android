@@ -1,9 +1,9 @@
-package tk.mygod.speech.tts
+package be.mygod.speech.tts
 
 import java.security.InvalidParameterException
 
 import android.text.Spanned
-import tk.mygod.text.EarconSpan
+import be.mygod.text.EarconSpan
 
 object SpeechSplitter {
   private val BEST_SPLITTERS_EVER = 0
@@ -36,9 +36,9 @@ final class SpeechSplitter(private val text: CharSequence, private var i: Int, p
   }
   private var nextEarcon = if (earconParts.isEmpty) len else earconParts.head.start
   private var part: SpeechPart = _
-  genNext
+  genNext()
 
-  private def genNext {
+  private def genNext() {
     part = null
     var start = -1
     var end = -1
@@ -81,10 +81,10 @@ final class SpeechSplitter(private val text: CharSequence, private var i: Int, p
     }
   }
 
-  override def hasNext = part != null
-  override def next = {
+  override def hasNext: Boolean = part != null
+  override def next: SpeechPart = {
     val result = part
-    genNext
+    genNext()
     result
   }
 }

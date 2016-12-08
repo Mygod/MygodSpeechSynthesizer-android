@@ -1,6 +1,6 @@
 package tk.mygod.speech.synthesizer
 
-import java.io.{IOException, OutputStream}
+import java.io.IOException
 import java.net.{URI, URISyntaxException}
 import java.text.{DateFormat, NumberFormat}
 import java.util.{Calendar, Locale}
@@ -25,14 +25,14 @@ import android.view._
 import android.view.inputmethod.InputMethodManager
 import android.widget.TextView.BufferType
 import android.widget.{ProgressBar, Toast}
-import tk.mygod.CurrentApp
-import tk.mygod.app.{CircularRevealActivity, ToolbarActivity}
-import tk.mygod.content.ServicePlusConnection
-import tk.mygod.os.Build
-import tk.mygod.speech.tts.OnTtsSynthesisCallbackListener
-import tk.mygod.util.CloseUtils._
-import tk.mygod.util.{IOUtils, MetricsUtils, MimeUtils}
-import tk.mygod.view.ViewPager
+import be.mygod.CurrentApp
+import be.mygod.app.{CircularRevealActivity, ToolbarActivity}
+import be.mygod.content.ServicePlusConnection
+import be.mygod.os.Build
+import be.mygod.speech.tts.OnTtsSynthesisCallbackListener
+import be.mygod.util.CloseUtils._
+import be.mygod.util.{IOUtils, MetricsUtils, MimeUtils}
+import be.mygod.view.ViewPager
 
 /**
  * @author Mygod
@@ -66,7 +66,7 @@ final class MainActivity extends ToolbarActivity with TypedFindView
   val connection: ServicePlusConnection[SynthesisService] = new ServicePlusConnection[SynthesisService] {
     override def onServiceConnected(name: ComponentName, binder: IBinder) {
       super.onServiceConnected(name, binder)
-      if (service.get.status == SynthesisService.IDLE) onTtsSynthesisFinished else {
+      if (service.get.status == SynthesisService.IDLE) onTtsSynthesisFinished() else {
         inputText.setText(service.get.rawText)
         textView.setText(service.get.rawText)
         onTtsSynthesisStarting(service.get.currentText.length)
@@ -77,7 +77,7 @@ final class MainActivity extends ToolbarActivity with TypedFindView
     }
   }
   private var pendingUri: Uri = _
-  def service = connection.service.orNull
+  def service: SynthesisService = connection.service.orNull
 
   protected override def onCreate(savedInstanceState: Bundle) {
     super.onCreate(savedInstanceState)
@@ -94,15 +94,15 @@ final class MainActivity extends ToolbarActivity with TypedFindView
     fab.setOnClickListener(_ => if (service.status == SynthesisService.IDLE) {
       try service.speak(getText, getStartOffset) catch {
         case e: Exception =>
-          e.printStackTrace
-          makeToast(getString(R.string.synthesis_error, e.getLocalizedMessage)).show
-          service.stop
+          e.printStackTrace()
+          makeToast(getString(R.string.synthesis_error, e.getLocalizedMessage)).show()
+          service.stop()
       }
-    } else service.stop)
+    } else service.stop())
     fab.setOnLongClickListener(_ => {
       positionToast(Toast.makeText(this, if (service.status == SynthesisService.IDLE)
         R.string.action_speak else R.string.action_stop, Toast.LENGTH_SHORT), fab, 0,
-        MetricsUtils.dp2px(this, -8), true).show
+        MetricsUtils.dp2px(this, -8), above = true).show()
       true
     })
     pager = findView(TR.pager)
@@ -110,12 +110,12 @@ final class MainActivity extends ToolbarActivity with TypedFindView
     textView = findView(TR.text_view)
     if (Build.version >= 23) {
       val callback2 = new Callback2 {
-        def onCreateActionMode(mode: ActionMode, menu: Menu) = {
-          if (enableSsmlDroid) menu.add(0, R.id.action_style, Menu.CATEGORY_SECONDARY, R.string.action_style)
+        def onCreateActionMode(mode: ActionMode, menu: Menu): Boolean = {
+          if (App.enableSsmlDroid) menu.add(0, R.id.action_style, Menu.CATEGORY_SECONDARY, R.string.action_style)
           true
         }
-        def onDestroyActionMode(mode: ActionMode) = ()
-        def onActionItemClicked(mode: ActionMode, item: MenuItem) = onMenuItemClick(item)
+        def onDestroyActionMode(mode: ActionMode): Unit = ()
+        def onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean = onMenuItemClick(item)
         def onPrepareActionMode(mode: ActionMode, menu: Menu) = false
       }
       inputText.setCustomInsertionActionModeCallback(callback2)
@@ -130,7 +130,7 @@ final class MainActivity extends ToolbarActivity with TypedFindView
 
   protected override def onResume() {
     super.onResume()
-    styleItem.setVisible(Build.version < 23 && enableSsmlDroid)
+    styleItem.setVisible(Build.version < 23 && App.enableSsmlDroid)
   }
 
   protected override def onStart() {
@@ -162,8 +162,8 @@ final class MainActivity extends ToolbarActivity with TypedFindView
   private def processUri(uri: Uri) = if (canReadExtStorage) autoClose(getContentResolver.openInputStream(uri)) {
     input =>
       inputText.setText(IOUtils.readAllText(input))
-      displayName = uri.getLastPathSegment
-    } else makeToast(R.string.read_file_storage_denied).show
+      App.displayName = uri.getLastPathSegment
+    } else makeToast(R.string.read_file_storage_denied).show()
 
   override def onNewIntent(data: Intent) {
     super.onNewIntent(data)
@@ -178,7 +178,7 @@ final class MainActivity extends ToolbarActivity with TypedFindView
         case Some(service) => service.status
         case _ => SynthesisService.IDLE
       }) != SynthesisService.IDLE) {
-        makeSnackbar(R.string.error_synthesis_in_progress).show
+        makeSnackbar(R.string.error_synthesis_in_progress).show()
         return
       }
       if ("file".equals(uri.getScheme)) if (canReadExtStorage) processUri(uri) else {
@@ -190,23 +190,23 @@ final class MainActivity extends ToolbarActivity with TypedFindView
         autoClose(getContentResolver.query(uri, Array(OpenableColumns.DISPLAY_NAME, MediaStore.MediaColumns.TITLE),
           null, null, null))(cursor => if (cursor != null && cursor.moveToFirst) {
           var index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-          displayName = cursor.getString(index)
-          if (index < 0 || displayName == null) {
+          App.displayName = cursor.getString(index)
+          if (index < 0 || App.displayName == null) {
             index = cursor.getColumnIndex(MediaStore.MediaColumns.TITLE)
-            displayName = cursor.getString(index)
+            App.displayName = cursor.getString(index)
           }
         })
       }
-      if ("application/ssml+xml".equalsIgnoreCase(data.getType) || displayName != null &&
-        displayName.toLowerCase.endsWith(".ssml")) enableSsmlDroid(true)
+      if ("application/ssml+xml".equalsIgnoreCase(data.getType) || App.displayName != null &&
+        App.displayName.toLowerCase.endsWith(".ssml")) App.enableSsmlDroid(true)
     } catch {
       case e: IOException =>
-        e.printStackTrace
+        e.printStackTrace()
         makeSnackbar(String.format(R.string.open_error, e.getMessage))
     }
   }
 
-  override def onRequestPermissionsResult(requestCode: Int, permissions: Array[String], grantResults: Array[Int]) =
+  override def onRequestPermissionsResult(requestCode: Int, permissions: Array[String], grantResults: Array[Int]): Unit =
     requestCode match {
       case PERMISSION_REQUEST_STORAGE => if (pendingUri != null) {
         processUri(pendingUri)
@@ -244,14 +244,14 @@ final class MainActivity extends ToolbarActivity with TypedFindView
             calendar.setTime(instance.parse(str))
             failed = false
           } catch {
-            case ignore: ParseException =>
+            case _: ParseException =>
           }
           if (failed) throw new Exception
-          tag = String.format("date year=\"%s\" month=\"%s\" day=\"%s\" weekday=\"%s\"",
-            calendar.get(Calendar.YEAR): Integer, calendar.get(Calendar.MONTH): Integer,
-            calendar.get(Calendar.DAY_OF_MONTH): Integer, calendar.get(Calendar.DAY_OF_WEEK): Integer)
+          tag = s"date year=\"${calendar.get(Calendar.YEAR): Integer}\" month=\"" +
+            s"${calendar.get(Calendar.MONTH): Integer}\" day=\"${calendar.get(Calendar.DAY_OF_MONTH): Integer}\" " +
+            s"weekday=\"${calendar.get(Calendar.DAY_OF_WEEK): Integer}\""
         } catch {
-          case ignore: Exception =>
+          case _: Exception =>
             tag = "date year=\"\" month=\"\" day=\"\" weekday=\"\""
             toast = R.string.action_tts_date_toast
         }
@@ -266,7 +266,7 @@ final class MainActivity extends ToolbarActivity with TypedFindView
           tag = String.format("decimal integer_part=\"%s\" fractional_part=\"%s\"",
             if (i < 0) str else str.substring(0, i), if (i < 0) "" else str.substring(i + 1))
         } catch {
-          case ignore: NumberFormatException =>
+          case _: NumberFormatException =>
             tag = "decimal integer_part=\"\" fractional_part=\"\""
             toast = R.string.action_tts_decimal_toast
         }
@@ -298,7 +298,7 @@ final class MainActivity extends ToolbarActivity with TypedFindView
           if (temp != null) tagBuilder.append(String.format(" fragment_id=\"%s\"", temp))
           tag = tagBuilder.toString
         } catch {
-          case ignore: URISyntaxException =>
+          case _: URISyntaxException =>
             tag = "electronic protocol=\"\" username=\"\" password=\"\" domain=\"\" port=\"\" path=\"\" " +
               "query_string=\"\" fragment_id=\"\""
             toast = R.string.action_tts_electronic_toast
@@ -334,13 +334,13 @@ final class MainActivity extends ToolbarActivity with TypedFindView
             calendar.setTime(instance.parse(str))
             failed = false
           } catch {
-            case ignore: ParseException =>
+            case _: ParseException =>
           }
           if (failed) throw new Exception
-          tag = String.format("time hours=\"%s\" minutes=\"%s\"", calendar.get(Calendar.HOUR_OF_DAY): Integer,
-            calendar.get(Calendar.MINUTE): Integer)
+          tag = s"time hours=\"${calendar.get(Calendar.HOUR_OF_DAY): Integer}\" " +
+            s"minutes=\"${calendar.get(Calendar.MINUTE): Integer}\""
         } catch {
-          case ignore: Exception =>
+          case _: Exception =>
             tag = "time hours=\"\" minutes=\"\""
             toast = R.string.action_tts_time_toast
         }
@@ -378,7 +378,7 @@ final class MainActivity extends ToolbarActivity with TypedFindView
     inputText.setTextKeepState(source.subSequence(0, selectionStart) + tag +
       source.subSequence(selectionEnd, source.length))
     inputText.setSelection(selectionStart + position)
-    if (toast != null) makeToast(toast).show
+    if (toast != null) makeToast(toast).show()
     false
   }
 
@@ -406,8 +406,8 @@ final class MainActivity extends ToolbarActivity with TypedFindView
       calendar.get(Calendar.DAY_OF_WEEK): Integer, calendar.get(Calendar.HOUR_OF_DAY): Integer,
       calendar.get(Calendar.MINUTE): Integer)
   }
-  def onMenuItemClick(item: MenuItem) = {
-    val ssml = enableSsmlDroid
+  def onMenuItemClick(item: MenuItem): Boolean = {
+    val ssml = App.enableSsmlDroid
     val mime = if (ssml) "application/ssml+xml" else "text/plain"
     item.getItemId match {
       case R.id.action_style =>
@@ -419,27 +419,27 @@ final class MainActivity extends ToolbarActivity with TypedFindView
         true
       case R.id.action_synthesize_to_file =>
         val mime = service.engines.selectedEngine.getMimeType
-        runOnUiThread(() => showSave(mime, getSaveFileName + '.' + MimeUtils.getExtension(mime), SAVE_SYNTHESIS))
+        runOnUiThread(() => showSave(mime, App.getSaveFileName + '.' + MimeUtils.getExtension(mime), SAVE_SYNTHESIS))
         true
       case R.id.action_open =>
         try startActivityForResult(new Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE)
           .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION).setType(mime), OPEN_TEXT)
         catch {
-          case e: ActivityNotFoundException => makeToast(R.string.open_error_no_browser).show
+          case _: ActivityNotFoundException => makeToast(R.string.open_error_no_browser).show()
         }
         true
       case R.id.action_save =>
         val extension = if (ssml) ".ssml" else ".txt"
-        var fileName = getSaveFileName
+        var fileName = App.getSaveFileName
         if (!fileName.toLowerCase.endsWith(extension)) fileName += extension
         showSave(mime, fileName, SAVE_TEXT)
         true
       case R.id.action_populate_sample =>
         var rawText: String = null
-        if (enableSsmlDroid)
+        if (App.enableSsmlDroid)
           try rawText = formatDefaultText(IOUtils.readAllText(getResources.openRawResource(R.raw.input_text_default)))
           catch {
-            case e: IOException => e.printStackTrace
+            case e: IOException => e.printStackTrace()
           }
         if (rawText == null) rawText = formatDefaultText(R.string.input_text_default)
         inputText.setText(rawText)
@@ -453,7 +453,7 @@ final class MainActivity extends ToolbarActivity with TypedFindView
   }
 
   private def getStartOffset = {
-    val start = pref.getString("text.start", "beginning")
+    val start = App.pref.getString("text.start", "beginning")
     val raw = if ("selection_start" == start) inputText.getSelectionStart
     else if ("selection_end" == start) inputText.getSelectionEnd else 0
     if (service.mappings == null) raw else service.mappings.getTargetOffset(raw)
@@ -470,40 +470,34 @@ final class MainActivity extends ToolbarActivity with TypedFindView
 
   def save(uri: Uri, requestCode: Int): Unit = requestCode match {
     case SAVE_TEXT =>
-      var output: OutputStream = null
-      try {
-        output = getContentResolver.openOutputStream(uri)
-        output.write(inputText.getText.toString.getBytes)
-      } catch {
+      try autoClose(getContentResolver.openOutputStream(uri))(_.write(inputText.getText.toString.getBytes)) catch {
         case e: IOException =>
-          e.printStackTrace
-          makeToast(getString(R.string.save_error, e.getMessage)).show
-      } finally if (output != null) try output.close catch {
-        case e: IOException => e.printStackTrace
+          e.printStackTrace()
+          makeToast(getString(R.string.save_error, e.getMessage)).show()
       }
     case SAVE_SYNTHESIS =>
       try service.synthesizeToUri(getText, getStartOffset, uri) catch {
         case e: Exception =>
-          e.printStackTrace
-          makeToast(getString(R.string.synthesis_error, e.getMessage)).show
-          service.stop
+          e.printStackTrace()
+          makeToast(getString(R.string.synthesis_error, e.getMessage)).show()
+          service.stop()
       }
   }
-  override def onActivityResult(requestCode: Int, resultCode: Int, data: Intent) = requestCode match {
+  override def onActivityResult(requestCode: Int, resultCode: Int, data: Intent): Unit = requestCode match {
     case OPEN_TEXT => if (resultCode == Activity.RESULT_OK) handleIntent(data)
     case SAVE_TEXT | SAVE_SYNTHESIS => if (resultCode == Activity.RESULT_OK) save(data.getData, requestCode)
     case OPEN_EARCON => if (resultCode == Activity.RESULT_OK) {
       val uri = data.getData
       try getContentResolver.takePersistableUriPermission(uri,
         data.getFlags & Intent.FLAG_GRANT_READ_URI_PERMISSION) catch {
-        case e: Exception => e.printStackTrace
+        case e: Exception => e.printStackTrace()
       }
       processTag(R.id.action_tts_earcon, inputText.getText, uri.toString)
     } else processTag(R.id.action_tts_earcon, inputText.getText)
     case _ => super.onActivityResult(requestCode, resultCode, data)
   }
 
-  def onTtsSynthesisStarting(length: Int) = runOnUiThread(() => {
+  def onTtsSynthesisStarting(length: Int): Unit = runOnUiThread(() => {
     fab.setImageDrawable(R.drawable.ic_av_mic)
     menu.setGroupEnabled(R.id.disabled_when_synthesizing, false)
     textView.setText(inputText.getText, BufferType.EDITABLE)
@@ -513,19 +507,19 @@ final class MainActivity extends ToolbarActivity with TypedFindView
     progressBar.setVisibility(View.VISIBLE)
     progressBar.setMax(length)
   })
-  def onTtsSynthesisPrepared(end: Int) = runOnUiThread(() => {
+  def onTtsSynthesisPrepared(end: Int): Unit = runOnUiThread(() => {
     if (progressBar.isIndeterminate) {
       progressBar.setIndeterminate(false)
       progressBar.setProgress(0)
     }
     progressBar.setSecondaryProgress(end)
   })
-  def onTtsSynthesisCallback(s: Int, e: Int) = {
+  def onTtsSynthesisCallback(s: Int, e: Int): Unit = {
     var start = s
     var end = e
     if (service.mappings != null) {
-      start = service.mappings.getSourceOffset(start, false)
-      end = service.mappings.getSourceOffset(end, true)
+      start = service.mappings.getSourceOffset(start, preferLeft = false)
+      end = service.mappings.getSourceOffset(end, preferLeft = true)
     }
     if (end < start) end = start
     runOnUiThread(() => {
@@ -540,18 +534,18 @@ final class MainActivity extends ToolbarActivity with TypedFindView
       textView.bringPointIntoView(end)
     })
   }
-  def onTtsSynthesisError(start: Int, end: Int) = ()
-  def onTtsSynthesisFinished = runOnUiThread(() => {
+  def onTtsSynthesisError(start: Int, end: Int): Unit = ()
+  def onTtsSynthesisFinished(): Unit = runOnUiThread(() => {
     fab.setImageDrawable(R.drawable.ic_av_mic_none)
     menu.setGroupEnabled(R.id.disabled_when_synthesizing, true)
     pager.setCurrentItem(0, false)
     progressBar.setVisibility(View.INVISIBLE)
   })
 
-  override def makeSnackbar(text: CharSequence, duration: Int = Snackbar.LENGTH_LONG, view: View = fab) =
+  override def makeSnackbar(text: CharSequence, duration: Int = Snackbar.LENGTH_LONG, view: View = fab): Snackbar =
     super.makeSnackbar(text, duration, view)
 
-  def showSave(mimeType: String, fileName: String, requestCode: Int) =
+  def showSave(mimeType: String, fileName: String, requestCode: Int): Unit =
     startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
       .putExtra(Intent.EXTRA_TITLE, fileName).setType(mimeType), requestCode)
 }

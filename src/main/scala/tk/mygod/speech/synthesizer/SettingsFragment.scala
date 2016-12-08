@@ -7,10 +7,10 @@ import android.os.Bundle
 import android.support.v7.preference.Preference
 import android.text.style.TextAppearanceSpan
 import android.text.{SpannableStringBuilder, Spanned, TextUtils}
-import tk.mygod.app.ActivityPlus
-import tk.mygod.concurrent.FailureHandler
-import tk.mygod.preference._
-import tk.mygod.speech.tts.{ConstantsWrapper, LocaleWrapper, TtsEngine}
+import be.mygod.app.ActivityPlus
+import be.mygod.concurrent.FailureHandler
+import be.mygod.preference._
+import be.mygod.speech.tts.{ConstantsWrapper, LocaleWrapper, TtsEngine}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -76,7 +76,7 @@ final class SettingsFragment extends PreferenceFragmentPlus {
       val count = voices.size
       val names = new ArrayBuffer[CharSequence](count)
       val ids = new ArrayBuffer[CharSequence](count)
-      val showLegacy = legacy getOrElse pref.getBoolean("engine.showLegacyVoices", false)
+      val showLegacy = legacy getOrElse App.pref.getBoolean("engine.showLegacyVoices", false)
       for (voice <- voices) {
         val features = voice.getFeatures
         if (showLegacy || !features.contains(ConstantsWrapper.KEY_FEATURE_LEGACY_SET_LANGUAGE_VOICE)) {
@@ -122,11 +122,7 @@ final class SettingsFragment extends PreferenceFragmentPlus {
     } onComplete FailureHandler
   }
 
-  override def onDisplayPreferenceDialog(preference: Preference) = preference match {
-    case p: IconListPreference => displayPreferenceDialog(p.getKey,
-      if (p.getKey == "engine") new BottomSheetPreferenceDialogFragment() else new IconListPreferenceDialogFragment())
-    case p: NumberPickerPreference => displayPreferenceDialog(p.getKey, new NumberPickerPreferenceDialogFragment())
-    case p: SeekBarPreference => displayPreferenceDialog(p.getKey, new SeekBarPreferenceDialogFragment())
-    case _ => super.onDisplayPreferenceDialog(preference)
-  }
+  override def onDisplayPreferenceDialog(preference: Preference): Unit = if (preference.getKey == "engine")
+    displayPreferenceDialog(preference.getKey, new BottomSheetPreferenceDialogFragment())
+  else super.onDisplayPreferenceDialog(preference)
 }

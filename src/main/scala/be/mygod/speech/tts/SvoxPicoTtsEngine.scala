@@ -1,4 +1,4 @@
-package tk.mygod.speech.tts
+package be.mygod.speech.tts
 
 import java.io._
 import java.lang.reflect.Field
@@ -7,23 +7,25 @@ import java.util.Locale
 import java.util.concurrent.{LinkedBlockingDeque, Semaphore}
 
 import android.annotation.TargetApi
-import android.content.{Intent, Context}
+import android.content.{Context, Intent}
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
 import android.speech.tts.TextToSpeech.{EngineInfo, OnInitListener}
 import android.speech.tts.{TextToSpeech, UtteranceProgressListener, Voice}
 import android.text.TextUtils
 import android.util.Log
-import tk.mygod.concurrent.StoppableFuture
-import tk.mygod.os.Build
-import tk.mygod.util.Conversions._
-import tk.mygod.util.{IOUtils, LocaleUtils}
+import be.mygod.concurrent.StoppableFuture
+import be.mygod.os.Build
+import be.mygod.util.CloseUtils._
+import be.mygod.util.Conversions._
+import be.mygod.util.{IOUtils, LocaleUtils}
 
 import scala.collection.JavaConversions._
-import scala.collection.immutable
+import scala.collection.immutable.SortedSet
+import scala.collection.{immutable, mutable}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.control.Breaks._
 
 /**
  * @author Mygod
@@ -40,7 +42,7 @@ object SvoxPicoTtsEngine {
     startLock = c.getDeclaredField("mStartLock")
     startLock.setAccessible(true)
   } catch {
-    case e: NoSuchFieldException => e.printStackTrace
+    case e: NoSuchFieldException => e.printStackTrace()
   }
 }
 
@@ -51,14 +53,14 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
 
   @TargetApi(21)
   private final class VoiceWrapper(var voice: Voice) extends TtsVoice {
-    def getFeatures = voice.getFeatures
-    def getLatency = voice.getLatency
-    def getLocale = voice.getLocale
-    def getName = voice.getName
-    def getQuality = voice.getQuality
-    def isNetworkConnectionRequired = voice.isNetworkConnectionRequired
-    def getDisplayName = voice.getName
-    override def toString = voice.getName
+    def getFeatures: mutable.Set[String] = voice.getFeatures
+    def getLatency: Int = voice.getLatency
+    def getLocale: Locale = voice.getLocale
+    def getName: String = voice.getName
+    def getQuality: Int = voice.getQuality
+    def isNetworkConnectionRequired: Boolean = voice.isNetworkConnectionRequired
+    def getDisplayName: String = voice.getName
+    override def toString: String = voice.getName
   }
 
   @TargetApi(21)
@@ -66,14 +68,14 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
 
   //noinspection ScalaDeprecation
   final class LocaleVoice(loc: Locale) extends LocaleWrapper(loc) {
-    override def getFeatures = {
+    override def getFeatures: mutable.Set[String] = {
       val features = tts.getFeatures(locale)
       if (tts.isLanguageAvailable(getLocale) == TextToSpeech.LANG_MISSING_DATA)
         features.add(ConstantsWrapper.KEY_FEATURE_NOT_INSTALLED)
       features
     }
 
-    override def isNetworkConnectionRequired = {
+    override def isNetworkConnectionRequired: Boolean = {
       val features = getFeatures
       features.contains(ConstantsWrapper.KEY_FEATURE_NETWORK_SYNTHESIS) &&
         !features.contains(ConstantsWrapper.KEY_FEATURE_EMBEDDED_SYNTHESIS)
@@ -83,7 +85,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
   //noinspection ScalaDeprecation
   private final class SpeakTask(private val currentText: CharSequence, private val startOffset: Int,
                                 finished: Unit => Unit = null) extends StoppableFuture(finished) {
-    def work: Unit = try {
+    def work(): Unit = try {
       for (part <- new SpeechSplitter(currentText, startOffset, getMaxLength, true)) try {
         if (isStopped) {
           tts.stop
@@ -105,12 +107,12 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
         if (listener != null) listener.onTtsSynthesisPrepared(part.end)
       } catch {
         case e: Exception =>
-          e.printStackTrace
+          e.printStackTrace()
           if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
       }
     } catch {
       case e: Exception =>
-        e.printStackTrace
+        e.printStackTrace()
         if (listener != null) listener.onTtsSynthesisError(0, currentText.length)
     } finally if (Build.version >= 21) tts.speak("", TextToSpeech.QUEUE_ADD, getParamsL(""), "")
     else tts.speak("", TextToSpeech.QUEUE_ADD, getParams("")) // stop sign
@@ -122,35 +124,29 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
     private val mergeQueue = new LinkedBlockingDeque[SpeechPart]
     val synthesizeLock = new Semaphore(1)
 
-    Future(breakable(try {
+    Future(try {
       var header: Array[Byte] = null
       var length = 0L
       var part = mergeQueue.take
-      while (part.start >= 0) {
-        var input: InputStream = null
+      while (!isStopped && part.start >= 0) {
         try {
-          if (isStopped) break
           if (listener != null) listener.onTtsSynthesisCallback(part.start, part.end)
-          input = if (part.isEarcon)
-            context.getContentResolver.openInputStream(currentText.subSequence(part.start, part.end))
-          else new FileInputStream(part.file)
-          if (header == null) {
-            header = new Array[Byte](44)
-            if (input.read(header, 0, 44) != 44) throw new IOException("File malformed.")
-            output.write(header, 0, 44)
-          } else if (input.skip(44) != 44) throw new IOException("File malformed.")
-          length += IOUtils.copy(input, output)
-          if (listener != null) listener.onTtsSynthesisCallback(part.end, part.end)
+          autoClose(
+            if (part.isEarcon) context.getContentResolver.openInputStream(currentText.subSequence(part.start, part.end))
+            else new FileInputStream(part.file)) { input =>
+            if (header == null) {
+              header = new Array[Byte](44)
+              if (input.read(header, 0, 44) != 44) throw new IOException("File malformed.")
+              output.write(header, 0, 44)
+            } else if (input.skip(44) != 44) throw new IOException("File malformed.")
+            length += IOUtils.copy(input, output)
+            if (listener != null) listener.onTtsSynthesisCallback(part.end, part.end)
+          }
         } catch {
           case e: Exception =>
-            e.printStackTrace
+            e.printStackTrace()
             if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
-        } finally {
-          if (input != null) try input.close catch {
-            case e: IOException => e.printStackTrace
-          }
-          if (part.file != null && !part.file.delete) part.file.deleteOnExit
-        }
+        } finally if (part.file != null && !part.file.delete()) part.file.deleteOnExit()
         part = mergeQueue.take
       }
       if (header != null) {
@@ -168,15 +164,15 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
       }
     } catch {
       case e: Exception =>
-        e.printStackTrace
+        e.printStackTrace()
         if (listener != null) listener.onTtsSynthesisError(0, currentText.length)
     } finally {
-      try output.close catch {
-        case e: IOException => e.printStackTrace
+      try output.close() catch {
+        case e: IOException => e.printStackTrace()
       }
       if (listener != null) listener.onTtsSynthesisFinished
       synthesizeToStreamTask = null
-    }))
+    })
 
     def work: Unit = try {
       if (isStopped) return
@@ -194,14 +190,14 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
           synthesizeLock.release()  // wait for synthesis
         } catch {
           case e: Exception =>
-            e.printStackTrace
+            e.printStackTrace()
             if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
         }
         mergeQueue.add(part)
       }
     } catch {
       case e: Exception =>
-        e.printStackTrace
+        e.printStackTrace()
         if (listener != null) listener.onTtsSynthesisError(0, currentText.length)
     } finally mergeQueue.add(new SpeechPart)  // stop sign
   }
@@ -229,7 +225,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
       }
       val part = SpeechPart.parse(utteranceId)
       if (listener != null) listener.onTtsSynthesisError(part.start, part.end)
-      if (synthesizeToStreamTask != null) synthesizeToStreamTask.synthesizeLock.release
+      if (synthesizeToStreamTask != null) synthesizeToStreamTask.synthesizeLock.release()
     }
 
     def onDone(utteranceId: String) {
@@ -240,7 +236,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
       }
       val part = SpeechPart.parse(utteranceId)
       if (synthesizeToStreamTask != null) {
-        synthesizeToStreamTask.synthesizeLock.release
+        synthesizeToStreamTask.synthesizeLock.release()
         if (listener != null) listener.onTtsSynthesisPrepared(part.end)
       } else if (speakTask != null) if (listener != null) listener.onTtsSynthesisCallback(part.end, part.end)
     }
@@ -252,14 +248,14 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
     }
   })
 
-  def onInit(status: Int) = if (status != TextToSpeech.SUCCESS) {
+  def onInit(status: Int): Unit = if (status != TextToSpeech.SUCCESS) {
     Log.e(TAG, "TextToSpeech init failed: " + status)
-    initLock.release
+    initLock.release()
     if (selfDestructionListener != null) selfDestructionListener(this)
-    onDestroy
+    onDestroy()
   } else Future {
-    initVoices
-    initLock.release
+    initVoices()
+    initLock.release()
     //noinspection ScalaDeprecation
     if (preInitSetVoice != null) setVoice(preInitSetVoice)
     else if (useNativeVoice) {
@@ -268,19 +264,19 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
     } else setVoice(new LocaleVoice(tts.getDefaultLanguage))
   }
 
-  private def initVoices {
+  private def initVoices() {
     if (useNativeVoice) try {
       voices = tts.getVoices.map(wrap(_).asInstanceOf[TtsVoice]).to[immutable.SortedSet]
       return
     } catch {
       case exc: RuntimeException =>
         useNativeVoice = false
-        exc.printStackTrace
+        exc.printStackTrace()
         Log.e(TAG, "Voices not supported: " + engineInfo.name)
     }
     try voices = Locale.getAvailableLocales
-      .filter(l => try tts.isLanguageAvailable(l) != TextToSpeech.LANG_NOT_SUPPORTED
-                   catch { case ignore: Exception => false })
+      .filter(l =>
+        try tts.isLanguageAvailable(l) != TextToSpeech.LANG_NOT_SUPPORTED catch { case _: Exception => false })
       .map(l => {
         tts.setLanguage(l)
         //noinspection ScalaDeprecation
@@ -288,7 +284,7 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
       }).to[immutable.SortedSet]
     catch {
       case e: Exception =>
-        e.printStackTrace
+        e.printStackTrace()
     }
   }
 
@@ -297,12 +293,12 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
     initLock.release()
   }
 
-  def getVoices = {
+  def getVoices: SortedSet[TtsVoice] = {
     waitForInit()
     voices
   }
 
-  def getVoice = {
+  def getVoice: TtsVoice = {
     waitForInit()
     //noinspection ScalaDeprecation
     if (useNativeVoice) wrap(tts.getVoice) else new LocaleVoice(tts.getLanguage)
@@ -313,52 +309,49 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
       preInitSetVoice = voice.getName
       return true
     }
-    initLock.release
+    initLock.release()
     if (useNativeVoice && voice.isInstanceOf[VoiceWrapper]) try {
       tts.setVoice(voice.asInstanceOf[VoiceWrapper].voice)
       return true
     } catch {
       case e: Exception =>
-        e.printStackTrace
+        e.printStackTrace()
         return false
     }
     try {
       tts.setLanguage(voice.getLocale)
       true
-    }
-    catch {
+    } catch {
       case e: Exception =>
-        e.printStackTrace
+        e.printStackTrace()
         false
     }
   }
 
-  def setVoice(voiceName: String): Boolean = {
-    if (TextUtils.isEmpty(voiceName)) return false
-    if (!initLock.tryAcquire) {
-      preInitSetVoice = voiceName
-      return true
-    }
-    initLock.release
+  def setVoice(voiceName: String): Boolean = if (TextUtils.isEmpty(voiceName)) false else if (initLock.tryAcquire) {
+    initLock.release()
     if (useNativeVoice) {
       for (voice <- voices) if (voiceName == voice.getName) return setVoice(voice)
-      return false
-    }
-    try {
+      false
+    } else try {
       tts.setLanguage(LocaleUtils.parseLocale(voiceName))
       true
     } catch {
       case e: Exception =>
-        e.printStackTrace
+        e.printStackTrace()
         false
     }
+  } else {
+    preInitSetVoice = voiceName
+    true
   }
 
-  override def getID = super.getID + ':' + engineInfo.name
-  override def getName = engineInfo.label
-  protected def getIconInternal = context.getPackageManager.getDrawable(engineInfo.name, engineInfo.icon, null)
+  override def getID: String = super.getID + ':' + engineInfo.name
+  override def getName: String = engineInfo.label
+  protected def getIconInternal: Drawable =
+    context.getPackageManager.getDrawable(engineInfo.name, engineInfo.icon, null)
   def getMimeType = "audio/x-wav"
-  def getMaxLength = TextToSpeech.getMaxSpeechInputLength
+  def getMaxLength: Int = TextToSpeech.getMaxSpeechInputLength
 
   @TargetApi(21)
   private def getParamsL(id: String) = {
@@ -398,18 +391,18 @@ final class SvoxPicoTtsEngine(context: Context, info: EngineInfo = null,
       _ => synthesizeToStreamTask = null)
   }
 
-  def stop {
-    if (speakTask != null) speakTask.stop
-    if (synthesizeToStreamTask != null) synthesizeToStreamTask.stop
-    if (tts != null) tts.stop
+  def stop() {
+    if (speakTask != null) speakTask.stop()
+    if (synthesizeToStreamTask != null) synthesizeToStreamTask.stop()
+    if (tts != null) tts.stop()
   }
 
-  override def onDestroy {
-    stop
+  override def onDestroy() {
+    stop()
     if (tts != null) {
-      tts.shutdown
+      tts.shutdown()
       tts = null
     }
-    super.onDestroy
+    super.onDestroy()
   }
 }

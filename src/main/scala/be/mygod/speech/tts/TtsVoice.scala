@@ -1,4 +1,4 @@
-package tk.mygod.speech.tts
+package be.mygod.speech.tts
 
 import java.util.Locale
 
@@ -16,7 +16,7 @@ abstract class TtsVoice extends Ordered[TtsVoice] {
   def isNetworkConnectionRequired: Boolean
   def getDisplayName: String
 
-  override def compare(that: TtsVoice) = {
+  override def compare(that: TtsVoice): Int = {
     val lang = getLocale.getDisplayName.compareToIgnoreCase(that.getLocale.getDisplayName)
     if (lang == 0) getName.compareToIgnoreCase(that.getName) else lang
   }

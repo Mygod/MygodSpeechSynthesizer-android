@@ -5,7 +5,7 @@
     <include layout="@layout/toolbar_light_dark" />
     <android.support.design.widget.CoordinatorLayout android:layout_width="match_parent"
                                                      android:layout_height="match_parent">
-        <tk.mygod.view.ViewPager android:layout_width="match_parent" android:layout_height="match_parent"
+        <be.mygod.view.ViewPager android:layout_width="match_parent" android:layout_height="match_parent"
                                  android:id="@+id/pager">
             <android.support.v4.widget.NestedScrollView android:fillViewport="true"
                                                         android:layout_width="match_parent"
@@ -39,7 +39,7 @@
                                                              android:paddingBottom="10dp"
                                                              style="?attr/editTextStyle"/>
             </android.support.v4.widget.NestedScrollView>
-        </tk.mygod.view.ViewPager>
+        </be.mygod.view.ViewPager>
         <ProgressBar android:id="@+id/progressBar" style="@style/Widget.AppCompat.ProgressBar.Horizontal"
                      android:layout_width="match_parent" android:layout_height="wrap_content"
                      android:visibility="invisible" android:layout_marginTop="-8dp" />

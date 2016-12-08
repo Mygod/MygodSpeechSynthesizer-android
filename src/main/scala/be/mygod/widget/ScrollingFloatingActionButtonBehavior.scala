@@ -1,4 +1,4 @@
-package tk.mygod.widget
+package be.mygod.widget
 
 import android.content.Context
 import android.support.design.widget.{CoordinatorLayout, FloatingActionButton}
@@ -13,9 +13,9 @@ class ScrollingFloatingActionButtonBehavior(context: Context, attrs: AttributeSe
   override def onStartNestedScroll(parent: CoordinatorLayout, child: FloatingActionButton, directTargetChild: View,
                                    target: View, nestedScrollAxes: Int) = true
   override def onNestedScroll(parent: CoordinatorLayout, child: FloatingActionButton, target: View, dxConsumed: Int,
-                              dyConsumed: Int, dxUnconsumed: Int, dyUnconsumed: Int) = {
+                              dyConsumed: Int, dxUnconsumed: Int, dyUnconsumed: Int): Unit = {
     super.onNestedScroll(parent, child, target, dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed)
     val dy = dyConsumed + dyUnconsumed
-    if (dy < 0) child.show else if (dy > 0) child.hide
+    if (dy < 0) child.show() else if (dy > 0) child.hide()
   }
 }

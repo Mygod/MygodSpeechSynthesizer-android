@@ -1,4 +1,4 @@
-package tk.mygod.text
+package be.mygod.text
 
 /**
  * @author Mygod

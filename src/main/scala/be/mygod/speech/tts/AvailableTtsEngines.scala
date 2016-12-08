@@ -1,4 +1,4 @@
-package tk.mygod.speech.tts
+package be.mygod.speech.tts
 
 import android.content.Context
 
@@ -34,5 +34,5 @@ final class AvailableTtsEngines(context: Context) extends ArrayBuffer[TtsEngine]
     false
   }
 
-  def onDestroy = for (engine <- this) engine.onDestroy
+  def onDestroy(): Unit = for (engine <- this) engine.onDestroy()
 }
