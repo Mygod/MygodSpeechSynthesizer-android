@@ -247,9 +247,9 @@ final class MainActivity extends ToolbarActivity with TypedFindView
             case _: ParseException =>
           }
           if (failed) throw new Exception
-          tag = s"date year=\"${calendar.get(Calendar.YEAR): Integer}\" month=\"" +
-            s"${calendar.get(Calendar.MONTH): Integer}\" day=\"${calendar.get(Calendar.DAY_OF_MONTH): Integer}\" " +
-            s"weekday=\"${calendar.get(Calendar.DAY_OF_WEEK): Integer}\""
+          tag = """date year="%s" month="%s" day="%s" weekday="%s"""".format(calendar.get(Calendar.YEAR): Integer,
+            calendar.get(Calendar.MONTH): Integer, calendar.get(Calendar.DAY_OF_MONTH): Integer,
+            calendar.get(Calendar.DAY_OF_WEEK): Integer)
         } catch {
           case _: Exception =>
             tag = "date year=\"\" month=\"\" day=\"\" weekday=\"\""
@@ -337,8 +337,8 @@ final class MainActivity extends ToolbarActivity with TypedFindView
             case _: ParseException =>
           }
           if (failed) throw new Exception
-          tag = s"time hours=\"${calendar.get(Calendar.HOUR_OF_DAY): Integer}\" " +
-            s"minutes=\"${calendar.get(Calendar.MINUTE): Integer}\""
+          tag = """time hours="%s" minutes="%s""""
+            .format(calendar.get(Calendar.HOUR_OF_DAY): Integer, calendar.get(Calendar.MINUTE): Integer)
         } catch {
           case _: Exception =>
             tag = "time hours=\"\" minutes=\"\""

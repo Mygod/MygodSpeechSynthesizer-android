@@ -53,7 +53,7 @@ final class SettingsFragment extends PreferenceFragmentPlus {
       engine.setEntryValues(ids)
       engine.setEntryIcons(icons)
       engine.setValue(SynthesisService.instance.engines.selectedEngine.getID)
-      engine.init
+      engine.init()
       updateVoices()
     }
     findPreference("engine.showLegacyVoices").setOnPreferenceChangeListener((_, newValue) => {
