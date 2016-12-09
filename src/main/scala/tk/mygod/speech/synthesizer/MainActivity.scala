@@ -8,6 +8,7 @@ import java.util.{Calendar, Locale}
 import android.Manifest.permission
 import android.app.Activity
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.content.{ActivityNotFoundException, ComponentName, Context, Intent}
 import android.media.AudioManager
 import android.net.{ParseException, Uri}
@@ -436,12 +437,15 @@ final class MainActivity extends ToolbarActivity with TypedFindView
         true
       case R.id.action_populate_sample =>
         var rawText: String = null
+        val config = new Configuration(getResources.getConfiguration)
+        config.setLocale(service.engines.selectedEngine.getVoice.getLocale)
+        val engineRes = createConfigurationContext(config).getResources
         if (App.enableSsmlDroid)
-          try rawText = formatDefaultText(IOUtils.readAllText(getResources.openRawResource(R.raw.input_text_default)))
+          try rawText = formatDefaultText(IOUtils.readAllText(engineRes.openRawResource(R.raw.input_text_default)))
           catch {
             case e: IOException => e.printStackTrace()
           }
-        if (rawText == null) rawText = formatDefaultText(R.string.input_text_default)
+        if (rawText == null) rawText = formatDefaultText(engineRes.getString(R.string.input_text_default))
         inputText.setText(rawText)
         true
       case R.id.action_settings =>

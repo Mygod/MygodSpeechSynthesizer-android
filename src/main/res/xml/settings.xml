@@ -2,46 +2,41 @@
 <android.support.v7.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
                                                 xmlns:app="http://schemas.android.com/apk/res-auto"
                                                 android:title="@string/settings">
-    <tk.mygod.preference.PreferenceCategory android:title="@string/settings_engines_languages">
-        <tk.mygod.preference.IconListPreference android:key="engine"
+    <be.mygod.preference.PreferenceCategory android:title="@string/settings_engines_languages">
+        <be.mygod.preference.IconListPreference android:key="engine"
                                                 android:title="@string/settings_engine"
-                                                android:summary="%s"
-        />
-        <tk.mygod.preference.IconListPreference android:key="engine.voice" android:title="@string/settings_voice"
+                                                android:summary="%s"/>
+        <be.mygod.preference.IconListPreference android:key="engine.voice" android:title="@string/settings_voice"
                                                 android:persistent="false"/>
         <android.support.v14.preference.SwitchPreference android:key="engine.showLegacyVoices"
                                                          android:title="@string/settings_show_legacy_voices"
                                                          android:summary="@string/settings_show_legacy_voices_summary"/>
-    </tk.mygod.preference.PreferenceCategory>
-    <tk.mygod.preference.PreferenceCategory android:title="@string/settings_tweaks">
-        <tk.mygod.preference.NumberPickerPreference android:key="tweaks.pitch"
+    </be.mygod.preference.PreferenceCategory>
+    <be.mygod.preference.PreferenceCategory android:title="@string/settings_tweaks">
+        <be.mygod.preference.NumberPickerPreference android:key="tweaks.pitch"
                                                     android:title="@string/settings_pitch"
                                                     android:summary="@string/settings_pitch_summary"
                                                     android:defaultValue="100"
-                                                    app:min="1"
-        />
-        <tk.mygod.preference.NumberPickerPreference android:key="tweaks.speechRate"
+                                                    app:min="1"/>
+        <be.mygod.preference.NumberPickerPreference android:key="tweaks.speechRate"
                                                     android:title="@string/settings_speech_rate"
                                                     android:summary="@string/settings_speech_rate_summary"
                                                     android:defaultValue="100"
-                                                    app:min="1"
-        />
-        <tk.mygod.preference.SeekBarPreference android:key="tweaks.pan"
+                                                    app:min="1"/>
+        <be.mygod.preference.SeekBarPreference android:key="tweaks.pan"
                                                android:summary="%.2f"
                                                android:title="@string/settings_pan"
                                                android:defaultValue="0"
                                                app:min="-1"
-                                               app:reset="0"
-        />
-    </tk.mygod.preference.PreferenceCategory>
-    <tk.mygod.preference.PreferenceCategory android:title="@string/settings_text">
-        <tk.mygod.preference.DropDownPreference android:key="text.start"
-                                                android:summary="%s"
-                                                android:defaultValue="beginning"
-                                                android:title="@string/settings_start_from"
-                                                android:entries="@array/settings_start_from"
-                                                android:entryValues="@array/settings_start_from_values"
-        />
+                                               app:reset="0"/>
+    </be.mygod.preference.PreferenceCategory>
+    <be.mygod.preference.PreferenceCategory android:title="@string/settings_text">
+        <android.support.v7.preference.DropDownPreference android:key="text.start"
+                                                          android:summary="%s"
+                                                          android:defaultValue="beginning"
+                                                          android:title="@string/settings_start_from"
+                                                          android:entries="@array/settings_start_from"
+                                                          android:entryValues="@array/settings_start_from_values"/>
         <android.support.v14.preference.SwitchPreference android:key="text.ignoreSingleLineBreak"
                                                          android:summary="@string/settings_ignore_single_line_break_summary"
                                                          android:title="@string/settings_ignore_single_line_break"/>
@@ -50,17 +45,16 @@
                                                          android:summary="@string/settings_enable_ssmldroid_summary"/>
         <android.support.v7.preference.Preference android:key="ssmlDroid.userGuidelines"
                                                   android:title="@string/settings_ssmldroid_user_guidelines"/>
-    </tk.mygod.preference.PreferenceCategory>
-    <tk.mygod.preference.PreferenceCategory android:title="@string/settings_appearance">
-        <tk.mygod.preference.DropDownPreference android:key="appearance.notificationType"
-                                                android:summary="%s"
-                                                android:defaultValue="0"
-                                                android:entries="@array/settings_notification_type"
-                                                android:entryValues="@array/settings_notification_type_values"
-                                                android:title="@string/settings_notification_type"
-        />
+    </be.mygod.preference.PreferenceCategory>
+    <be.mygod.preference.PreferenceCategory android:title="@string/settings_appearance">
+        <android.support.v7.preference.DropDownPreference android:key="appearance.notificationType"
+                                                          android:summary="%s"
+                                                          android:defaultValue="0"
+                                                          android:entries="@array/settings_notification_type"
+                                                          android:entryValues="@array/settings_notification_type_values"
+                                                          android:title="@string/settings_notification_type"/>
         <android.support.v14.preference.SwitchPreference android:key="appearance.ticker"
                                                          android:title="@string/settings_show_ticker"
                                                          android:summary="@string/settings_show_ticker_summary"/>
-    </tk.mygod.preference.PreferenceCategory>
+    </be.mygod.preference.PreferenceCategory>
 </android.support.v7.preference.PreferenceScreen>
