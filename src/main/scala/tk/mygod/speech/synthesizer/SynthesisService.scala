@@ -149,7 +149,7 @@ final class SynthesisService extends ServicePlus with OnTtsSynthesisCallbackList
     textLength = length
     engines.selectedEngine.pitch = App.pref.getInt("tweaks.pitch", 100)
     engines.selectedEngine.speechRate = App.pref.getInt("tweaks.speechRate", 100)
-    engines.selectedEngine.pan = App.pref.getFloat("tweaks.pan", 0)
+    engines.selectedEngine.pan = App.pref.getInt("tweaks.pan", 0) * .01F
     if (listener != null) listener.onTtsSynthesisStarting(length)
   }
   override def onTtsSynthesisPrepared(end: Int) {

@@ -15,6 +15,9 @@ class App extends ApplicationPlus {
     AppCompatDelegate.setCompatVectorFromResourcesEnabled(true)
     pref = getSharedPreferences("settings", Context.MODE_PRIVATE)
     editor = pref.edit
+    try editor.putInt("tweaks.pan", (pref.getFloat("tweaks.pan", 0) * 100).toInt) catch {
+      case _: Exception =>
+    }
   }
 }
 

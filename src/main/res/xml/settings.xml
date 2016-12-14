@@ -23,12 +23,10 @@
                                                     android:summary="@string/settings_speech_rate_summary"
                                                     android:defaultValue="100"
                                                     app:min="1"/>
-        <be.mygod.preference.SeekBarPreference android:key="tweaks.pan"
-                                               android:summary="%.2f"
-                                               android:title="@string/settings_pan"
-                                               android:defaultValue="0"
-                                               app:min="-1"
-                                               app:reset="0"/>
+        <android.support.v7.preference.SeekBarPreference android:key="tweaks.pan"
+                                                         android:title="@string/settings_pan"
+                                                         android:defaultValue="0"
+                                                         app:min="-100"/>
     </be.mygod.preference.PreferenceCategory>
     <be.mygod.preference.PreferenceCategory android:title="@string/settings_text">
         <android.support.v7.preference.DropDownPreference android:key="text.start"
